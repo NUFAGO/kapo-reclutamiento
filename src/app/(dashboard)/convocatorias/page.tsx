@@ -254,40 +254,40 @@ export default function ConvocatoriasPage() {
       render: (value: any, row: Convocatoria) => (
         <div className="flex items-center justify-center gap-1.5">
           <Button
-            variant="custom"
+            variant="subtle"
             color="gray"
-            size="xs"
-            icon={<Eye className="h-4 w-4" />}
-            className="p-0.5"
+            size="icon"
             title="Ver detalles"
             onClick={() => handleViewConvocatoria(row)}
-          />
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
           <Button
-            variant="custom"
-            color="red"
-            size="xs"
-            icon={<FileText className="h-3.5 w-3.5" />}
-            className="p-0.5"
+            variant="subtle"
+            color="danger"
+            size="icon"
             title="Ver PDF"
             onClick={() => handleViewPdf(row)}
-          />
+          >
+            <FileText className="h-3.5 w-3.5" />
+          </Button>
           <Button
-            variant="custom"
-            color="green"
-            size="xs"
-            icon={<Settings className="h-3.5 w-3.5" />}
-            className="p-0.5"
+            variant="subtle"
+            color="success"
+            size="icon"
             title="Configurar Formulario"
             onClick={() => handleViewFormConfig(row)}
-          />
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </Button>
           <Button
-            variant="custom"
-            color="blue"
-            size="xs"
-            icon={<Link className="h-3.5 w-3.5" />}
-            className="p-0.5"
+            variant="subtle"
+            color="primary"
+            size="icon"
             title="Abrir enlace"
-          />
+          >
+            <Link className="h-3.5 w-3.5" />
+          </Button>
         </div>
       )
     }

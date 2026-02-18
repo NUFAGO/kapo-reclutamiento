@@ -39,8 +39,8 @@ export interface EntrevistaLlamada {
   interes_puesto: number
   pretension_monto: number
   pretension_negociable: string
-  comentarios: string
-  solicitar_referencias: string
+  comentarios?: string
+  solicitar_referencias?: string
   entrevistador_id: string
   entrevistador_nombre: string
   observaciones: string
@@ -68,8 +68,8 @@ export interface CrearEntrevistaLlamadaInput {
   interes_puesto: number
   pretension_monto: number
   pretension_negociable: string
-  comentarios: string
-  solicitar_referencias: string
+  comentarios?: string
+  solicitar_referencias?: string
   entrevistador_id: string
   entrevistador_nombre: string
   observaciones: string

@@ -7,6 +7,7 @@ import { OBTENER_FORMULARIO_CONFIG_POR_ID_QUERY } from '@/graphql/queries';
 import { CREAR_APLICACION_MUTATION } from '@/graphql/mutations';
 import toast from 'react-hot-toast';
 import { Button, Input, LoadingSpinner, Select } from '@/components/ui';
+import { useFileUpload, UPLOAD_CONFIGS } from '@/hooks/useFileUpload';
 
 interface CampoFormulario {
   id: string;
@@ -48,6 +49,9 @@ export default function PostularPage() {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // Hook para subir archivos
+  const { uploadFile, uploadMultipleFiles, isUploading, error: uploadError, clearError } = useFileUpload();
 
   useEffect(() => {
     const loadFormConfig = async () => {
@@ -131,6 +135,7 @@ export default function PostularPage() {
     const lastSubmit = localStorage.getItem('lastSubmitTime');
     if (lastSubmit && now - parseInt(lastSubmit) < 1000) { // 5 segundos mínimo entre envíos
       toast.error('Por favor espera unos segundos antes de enviar otra postulación');
+      setSubmitting(false);
       return;
     }
     localStorage.setItem('lastSubmitTime', now.toString());
@@ -140,6 +145,7 @@ export default function PostularPage() {
     // Validación de honeypot (campo oculto para detectar bots)
     if (honeypot.trim() !== '') {
       errors.push('Error de validación');
+      setSubmitting(false);
       return; // No mostrar el error real para no alertar a los bots
     }
 
@@ -162,8 +168,17 @@ export default function PostularPage() {
     });
 
     config.campos.forEach(campo => {
-      if (campo.requerido && !formData[campo.nombre]) {
+      // Validación para campos requeridos (excepto archivos que se validan específicamente abajo)
+      if (campo.requerido && campo.tipo !== 'file' && !formData[campo.nombre]) {
         errors.push(`${campo.etiqueta} es obligatorio`);
+      }
+      
+      // Validación específica para campos de archivo requeridos
+      if (campo.tipo === 'file' && campo.requerido) {
+        const archivos = formData[campo.nombre];
+        if (!archivos || (Array.isArray(archivos) && archivos.length === 0)) {
+          errors.push(`${campo.etiqueta} es obligatorio`);
+        }
       }
 
       if (campo.tipo === 'email' && formData[campo.nombre]) {
@@ -229,15 +244,60 @@ export default function PostularPage() {
 
     if (errors.length > 0) {
       toast.error(errors.join('\n'));
+      setSubmitting(false);
       return;
     }
 
     try {
       // Verificar que la configuración esté cargada (aunque el botón ya está deshabilitado)
-
       if (!config.convocatoriaId) {
         toast.error('Error: ID de convocatoria no encontrado');
+        setSubmitting(false);
         return;
+      }
+
+      // NUEVO: Subir archivos antes de crear la aplicación
+      const archivosSubidos: Record<string, string | string[]> = {};
+      
+      // Buscar campos de archivo en el formulario y subirlos
+      for (const campo of config.campos) {
+        if (campo.tipo === 'file' && formData[campo.nombre]) {
+          const archivos = Array.isArray(formData[campo.nombre]) 
+            ? formData[campo.nombre] 
+            : [formData[campo.nombre]];
+          
+          if (archivos.length > 0) {
+            // Determinar tipo de configuración según el campo
+            let uploadTipo: 'CV_DOCUMENTOS' | 'FOTOS_CANDIDATO' | 'IMAGENES' = 'CV_DOCUMENTOS';
+            
+            if (campo.etiqueta.toLowerCase().includes('foto') || campo.etiqueta.toLowerCase().includes('imagen')) {
+              uploadTipo = 'FOTOS_CANDIDATO';
+            } else if (campo.etiqueta.toLowerCase().includes('cv') || campo.etiqueta.toLowerCase().includes('currículum') || campo.etiqueta.toLowerCase().includes('documento')) {
+              uploadTipo = 'CV_DOCUMENTOS';
+            } else {
+              // Por defecto usar CV_DOCUMENTOS para permitir PDFs y documentos
+              uploadTipo = 'CV_DOCUMENTOS';
+            }
+
+            // Subir archivos
+            const resultado = await uploadMultipleFiles(archivos, { tipo: uploadTipo });
+            
+            if (resultado.successful.length > 0) {
+              // Guardar URLs de los archivos subidos
+              if (archivos.length === 1) {
+                archivosSubidos[campo.nombre] = resultado.successful[0].url;
+              } else {
+                archivosSubidos[campo.nombre] = resultado.successful.map(f => f.url);
+              }
+            }
+            
+            if (resultado.failed.length > 0) {
+              toast.error(`Error al subir ${resultado.failed.length} archivo(s) del campo "${campo.etiqueta}"`);
+              setSubmitting(false);
+              return;
+            }
+          }
+        }
       }
 
       // Preparar datos para la aplicación
@@ -254,6 +314,9 @@ export default function PostularPage() {
       const valMedio = formData['medio_convocatoria'] || formData['medio_enterado'] || findValue(['medio', 'enterado']) || 'Otro';
       const valPretension = Number(formData['pretension_economica']) || findValue(['pretension', 'economica', 'salario']) || 0;
 
+      // 🔥 NUEVO: Usar URLs de archivos subidos en lugar del hardcode
+      const curriculumUrl = archivosSubidos.curriculum || archivosSubidos.cv || archivosSubidos['cv-documento'] || 'simulado-cv.pdf';
+
       // Preparar datos para la aplicación
       const aplicacionData = {
         convocatoriaId: config.convocatoriaId,
@@ -265,12 +328,13 @@ export default function PostularPage() {
           correo: formData.correo,
           telefono: formData.telefono,
           lugarResidencia: formData.lugar_residencia,
-          curriculumUrl: 'simulado-cv.pdf'
+          curriculumUrl: curriculumUrl // ✅ Ahora usa URL real
         },
         // Enviar TODOS los datos del formulario como respuestas dinámicas
         respuestasFormulario: {
-          ...formData, // Incluir todos los campos capturados
-          medio_convocatoria: valMedio, // Asegurar normalización
+          ...formData,
+          ...archivosSubidos, // ✅ Incluir URLs de archivos subidos
+          medio_convocatoria: valMedio,
           anios_experiencia_general: Number(valExpGeneral) || 0,
         },
         // Campos específicos normalizados
@@ -279,7 +343,7 @@ export default function PostularPage() {
           aniosExperienciaGeneral: Number(valExpGeneral) || 0,
           medioConvocatoria: String(valMedio),
           pretensionEconomica: Number(valPretension) || 0,
-          curriculumUrl: 'simulado-cv.pdf'
+          curriculumUrl: curriculumUrl // ✅ Ahora usa URL real
         },
         aplicadoPor: 'CANDIDATO' as const
       };
@@ -410,10 +474,17 @@ export default function PostularPage() {
             <div className="space-y-3">
               <button
                 type="submit"
-                disabled={!config || loading || submitting}
+                disabled={!config || loading || submitting || isUploading}
                 className="w-full bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium py-3.5 px-4 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
               >
-                {submitting ? 'Enviando...' : 'Enviar postulación'}
+                {submitting || isUploading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <LoadingSpinner size={16} showText={false} />
+                    {isUploading ? 'Subiendo archivos...' : 'Enviando postulación...'}
+                  </span>
+                ) : (
+                  'Enviar postulación'
+                )}
               </button>
               <p className="text-xs text-center text-gray-500">
                 Los campos con <span className="text-red-500">*</span> son obligatorios

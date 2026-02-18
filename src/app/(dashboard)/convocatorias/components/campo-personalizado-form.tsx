@@ -36,7 +36,7 @@ const Label: React.FC<{ htmlFor?: string; children: React.ReactNode; className?:
   children,
   className = ""
 }) => (
-  <label htmlFor={htmlFor} className={`block text-xs font-medium text-gray-700 mb-1 ${className}`}>
+  <label htmlFor={htmlFor} className={`block text-xs font-medium text-text-primary mb-1 ${className}`}>
     {children}
   </label>
 );
@@ -129,7 +129,7 @@ export const CampoPersonalizadoForm: React.FC<CampoPersonalizadoFormProps> = ({
   };
 
   const modalTitle = (
-    <h2 className="text-sm font-semibold text-gray-900">
+    <h2 className="text-sm font-semibold text-text-primary">
       {campo ? 'Editar Campo' : 'Agregar Campo Personalizado'}
     </h2>
   );
@@ -172,7 +172,7 @@ export const CampoPersonalizadoForm: React.FC<CampoPersonalizadoFormProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
               placeholder="ej: anos_experiencia"
             />
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-text-secondary mt-1">
               Solo letras, números y guiones bajos
             </p>
           </div>
@@ -245,7 +245,7 @@ export const CampoPersonalizadoForm: React.FC<CampoPersonalizadoFormProps> = ({
         {/* Opciones para campos select */}
         {formData.tipo === 'select' && (
           <div>
-            <Label className="text-xs font-medium text-gray-700">Opciones de la Lista</Label>
+            <Label className="text-xs font-medium text-text-primary">Opciones de la Lista</Label>
             <div className="space-y-2">
               {formData.opciones.map((opcion, index) => (
                 <div key={index} className="flex items-center gap-2">
@@ -298,7 +298,7 @@ export const CampoPersonalizadoForm: React.FC<CampoPersonalizadoFormProps> = ({
                     }
                   }))}
                 />
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-text-secondary mt-1">
                   Número máximo de archivos (1-10)
                 </p>
               </div>
@@ -323,21 +323,21 @@ export const CampoPersonalizadoForm: React.FC<CampoPersonalizadoFormProps> = ({
                     }));
                   }}
                 />
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-text-secondary mt-1">
                   Mínimo 1MB, máximo 5MB
                 </p>
               </div>
             </div>
             <div>
               <Label>Tipos de Archivo Permitidos</Label>
-              <div className="text-sm text-gray-700 mt-2 p-3 bg-gray-50 rounded-lg">
+              <div className="text-sm text-text-primary mt-2 p-3 bg-card-bg rounded-lg border border-border-color">
                 <p className="font-medium mb-2">Configurados automáticamente:</p>
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">PDF</span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">DOC</span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">DOCX</span>
+                  <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">PDF</span>
+                  <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">DOC</span>
+                  <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">DOCX</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-2">
+                <p className="text-xs text-text-secondary mt-2">
                   Estos tipos están preconfigurados para seguridad
                 </p>
               </div>

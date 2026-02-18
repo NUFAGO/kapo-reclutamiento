@@ -13,6 +13,12 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // Ignorar reglas CSS específicas de Tailwind v4
+      "css/no-at-rules": ["error", { ignoreAtRules: ["variant", "theme"] }],
+    },
+  },
 ]);
 
 export default eslintConfig;

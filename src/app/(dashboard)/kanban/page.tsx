@@ -6,6 +6,28 @@ import { KanbanHeader } from './components/KanbanHeader'
 import { KanbanBoard } from './KanbanBoard'
 import CandidateModal from './components/modals/candidato/CandidateModal'
 
+// Genera un color determinístico y estable a partir de un id (convocatoriaId)
+// Devuelve un degradado con el color para el header del modal
+function getConvocatoriaColor(id: string): string {
+  let hash = 0
+
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash)
+    hash |= 0
+  }
+
+  const hue = Math.abs(hash) % 360
+
+  // Colores con saturación y lightness similares a los botones
+  const saturation = 65 + (Math.abs(hash >> 3) % 20) // 65–84% (similar a 500)
+  const lightness = 45 + (Math.abs(hash >> 6) % 25)  // 45–69% (similar a 500)
+
+  const baseColor = `hsla(${hue}, ${saturation}%, ${lightness}%, `
+
+  // Crear degradado con diferentes opacidades del mismo color
+  return `linear-gradient(135deg, ${baseColor}0.075) 0%, ${baseColor}0.035) 50%, ${baseColor}0.075) 100%)`
+}
+
 export default function KanbanPage() {
   const [convocatoriaSeleccionada, setConvocatoriaSeleccionada] = useState<string | null>(null)
   const [mostrarSoloDuplicados, setMostrarSoloDuplicados] = useState(false)
@@ -62,6 +84,7 @@ export default function KanbanPage() {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           aplicacion={selectedAplicacion}
+          headerBackground={getConvocatoriaColor(selectedAplicacion.convocatoriaId || '')}
         />
       )}
     </div>

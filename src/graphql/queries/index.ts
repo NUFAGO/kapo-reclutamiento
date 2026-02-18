@@ -32,6 +32,15 @@ export {
   LISTAR_ENTREVISTAS_LLAMADA_QUERY
 } from './entrevista-llamada.queries'
 
+// Entrevista regular queries
+export {
+  OBTENER_ENTREVISTA_REGULAR_QUERY,
+  OBTENER_ENTREVISTA_REGULAR_POR_APLICACION_QUERY,
+  EXISTE_ENTREVISTA_REGULAR_PARA_APLICACION_QUERY,
+  LISTAR_ENTREVISTAS_REGULARES_QUERY,
+  CONTAR_ENTREVISTAS_REGULARES_QUERY
+} from './entrevista-regular.queries'
+
 // Historial candidato queries
 export {
   OBTENER_HISTORIAL_APLICACION_QUERY,
@@ -40,3 +49,29 @@ export {
   OBTENER_ULTIMO_CAMBIO_ESTADO_QUERY,
   GENERAR_ESTADISTICAS_CONVERSION_QUERY
 } from './historial-candidato.queries'
+
+// Personal queries
+export {
+  BUSCAR_EMPLEADOS_QUERY
+} from './personal.queries'
+
+// Usuario queries
+export {
+  LIST_USUARIOS_PAGINATED_QUERY
+} from './usuario.queries'
+
+// Referencia queries
+export {
+  LISTAR_REFERENCIAS_QUERY,
+  OBTENER_REFERENCIA_QUERY,
+  LISTAR_REFERENCIAS_POR_APLICACION_QUERY
+} from './referencia.queries'
+
+// Debida Diligencia queries
+export {
+  OBTENER_DEBIDA_DILIGENCIA_QUERY,
+  OBTENER_DEBIDA_DILIGENCIA_POR_APLICACION_QUERY,
+  EXISTE_DEBIDA_DILIGENCIA_QUERY,
+  LISTAR_DEBIDAS_DILIGENCIAS_QUERY,
+  CONTAR_DEBIDAS_DILIGENCIAS_QUERY
+} from './debida-diligencia.queries'

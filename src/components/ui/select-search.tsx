@@ -2,7 +2,7 @@
 //select adaptable
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, X, Search } from 'lucide-react';
+import { ChevronDown, X, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface SelectSearchOption {
@@ -53,8 +53,9 @@ export function SelectSearch({
       const defaultOption = options.find(opt => opt.value === '');
       return defaultOption || null;
     }
-    return options.find(opt => opt.value === value);
-  }, [value, options]);
+    const found = options.find(opt => opt.value === value) || serverOptions.find(opt => opt.value === value);
+    return found;
+  }, [value, options, serverOptions]);
 
   // Sincronizar inputValue con value cuando cambia externamente
   // Si hay una opción seleccionada, mostrar su label, sino el value
@@ -71,6 +72,12 @@ export function SelectSearch({
     if (!onSearch) return;
 
     const searchTerm = inputValue.trim();
+    
+    // Si el inputValue es exactamente el label de la opción seleccionada, no buscar
+    if (selectedOption && inputValue === selectedOption.label) {
+      console.log('SelectSearch: inputValue is selected label, skipping search');
+      return;
+    }
     
     // Si hay menos caracteres que el mínimo, limpiar resultados de servidor
     if (searchTerm.length < minCharsForSearch) {
@@ -103,7 +110,7 @@ export function SelectSearch({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [inputValue, onSearch, minCharsForSearch]);
+  }, [inputValue, onSearch, minCharsForSearch, selectedOption]);
 
   // Filtrar opciones según el texto del input
   // Si hay búsqueda en servidor activa, usar esas opciones, sino filtrar localmente
@@ -307,7 +314,11 @@ export function SelectSearch({
       {/* Input editable - mismo estilo que el Input original */}
       <div className="relative flex items-center w-full">
         {showSearchIcon && (
-          <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 text-text-secondary pointer-events-none z-10" />
+          isSearching ? (
+            <Loader2 className="absolute left-1.5 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 text-text-secondary pointer-events-none z-10 animate-spin" />
+          ) : (
+            <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 text-text-secondary pointer-events-none z-10" />
+          )
         )}
         <input
           ref={inputRef}

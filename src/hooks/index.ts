@@ -20,7 +20,6 @@ export {
 
 // Hooks de entrevistas de llamada
 export {
-  useExisteEntrevistaLlamada,
   useEntrevistaLlamadaPorAplicacion,
   useEntrevistaLlamada,
   useCrearEntrevistaLlamada,
@@ -30,6 +29,17 @@ export {
   type CrearEntrevistaLlamadaInput,
   type ActualizarEntrevistaLlamadaInput,
 } from './useEntrevistasLlamada';
+
+// Hooks de entrevistas regulares (primera/segunda)
+export {
+  useEntrevistaRegularPorAplicacion,
+  useEntrevistaRegular,
+  useCrearEntrevistaRegular,
+  useActualizarEntrevistaRegular,
+  type EntrevistaRegular,
+  type CrearEntrevistaRegularInput,
+  type ActualizarEntrevistaRegularInput,
+} from './useEntrevistasRegulares';
 
 // Hooks de aplicaciones
 export {
@@ -52,3 +62,46 @@ export {
   type EstadisticasConversion,
   type TipoCambioHistorial,
 } from './useHistorialCandidato';
+
+// Hooks de empleados (servicio PERSONAL)
+export {
+  useEmpleados,
+  type EmpleadoBasico,
+} from './useEmpleados';
+
+// Hooks de usuarios (servicio AUTH)
+export {
+  useUsuarios,
+  type Usuario,
+  type PaginationInput,
+  type UsuarioFilterInput,
+  type PaginationInfo,
+  type ListUsuariosPaginatedResponse,
+  searchUsuarios,
+} from './useUsuarios';
+
+export {
+  useReferencias,
+  useReferencia,
+  useReferenciasPorAplicacion,
+  useCrearReferencia,
+  useActualizarReferencia,
+  useEliminarReferencia,
+  type Referencia,
+  type CrearReferenciaInput,
+  type ActualizarReferenciaInput,
+} from './useReferencias';
+
+// Hooks de debida diligencia
+export {
+  useExisteDebidaDiligencia,
+  useDebidaDiligenciaPorAplicacion,
+  useDebidaDiligencia,
+  useCrearDebidaDiligencia,
+  useActualizarDebidaDiligencia,
+  type DebidaDiligencia,
+  type ControlEvaluacion,
+  type CrearDebidaDiligenciaInput,
+  type ActualizarDebidaDiligenciaInput,
+  type CrearControlEvaluacionInput,
+} from './useDebidaDiligencia';

@@ -57,18 +57,16 @@ export function KanbanColumn({
     }
   }, [hasNextPage, loadingMore])
 
-  // Ordenar aplicaciones (posibles candidatos por prioridad ascendente)
-  const aplicacionesOrdenadas = [...aplicaciones].sort((a, b) => {
-    if (estado === KANBAN_ESTADOS.POSIBLES_CANDIDATOS) {
-      // Para posibles candidatos, ordenar por prioridad (1, 2, 3...)
-      const prioridadA = a.ordenPrioridad || 999
-      const prioridadB = b.ordenPrioridad || 999
-      return prioridadA - prioridadB
-    }
-
-    // Para otros estados, ordenar por fecha de aplicación más reciente primero
-    return new Date(b.fechaAplicacion).getTime() - new Date(a.fechaAplicacion).getTime()
-  })
+  // Ordenar aplicaciones: el backend ya ordena por fechaAplicacion descendente,
+  // pero para posibles candidatos necesitamos ordenar por prioridad
+  const aplicacionesOrdenadas = estado === KANBAN_ESTADOS.POSIBLES_CANDIDATOS
+    ? [...aplicaciones].sort((a, b) => {
+        // Para posibles candidatos, ordenar por prioridad (1, 2, 3...)
+        const prioridadA = a.ordenPrioridad || 999
+        const prioridadB = b.ordenPrioridad || 999
+        return prioridadA - prioridadB
+      })
+    : aplicaciones // Para otros estados, usar el orden del backend (fechaAplicacion DESC)
 
   const estadoColor = ESTADO_COLORES[estado]
   const estadoLabel = ESTADO_LABELS[estado]
@@ -116,8 +114,7 @@ export function KanbanColumn({
         {/* Mensaje cuando no hay aplicaciones */}
         {!isLoading && aplicaciones.length === 0 && (
           <div className="text-center py-8 text-gray-600 dark:text-gray-400">
-            <div className="text-sm">No hay aplicaciones</div>
-            <div className="text-xs mt-1">en este estado</div>
+            <div className="text-sm">No hay candidatos</div>
           </div>
         )}
 
@@ -131,7 +128,7 @@ export function KanbanColumn({
                 onClick={handleLoadMore}
                 className="text-xs underline hover:opacity-80 transition-opacity text-gray-600 dark:text-gray-400"
               >
-                Cargar más aplicaciones
+ 
               </button>
             )}
           </div>

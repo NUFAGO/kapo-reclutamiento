@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
-import { Phone, Calendar, MapPin, Briefcase, User, DollarSign, FileText, MessageSquare, Save, Edit } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Select, SelectOption } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { useExisteEntrevistaLlamada, useEntrevistaLlamadaPorAplicacion, useCrearEntrevistaLlamada, useActualizarEntrevistaLlamada } from '@/hooks'
+import { Phone, Calendar, MapPin, Briefcase, User, DollarSign, FileText, MessageSquare, Save, Edit, File } from 'lucide-react'
+import { Input, Textarea, Select, Button, Modal } from '@/components/ui'
+import { FaRegFilePdf } from "react-icons/fa";
+import type { SelectOption } from '@/components/ui'
+import { useEntrevistaLlamadaPorAplicacion, useCrearEntrevistaLlamada, useActualizarEntrevistaLlamada } from '@/hooks'
 import { useAuth } from '@/hooks'
 import { showSuccess, showError, TOAST_DURATIONS } from '@/lib/toast-utils'
+import { EntrevistaLlamadaPdf } from '../pdfs/EntrevistaLlamadaPdf'
+import { pdf } from '@react-pdf/renderer'
+
 
 interface LlamadaTabProps {
     aplicacion: AplicacionCandidato
@@ -18,9 +21,8 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
     // Hook para obtener información del usuario autenticado
     const { user } = useAuth()
 
-    // Hooks para verificar existencia y cargar datos
-    const { existe, loading: loadingExiste } = useExisteEntrevistaLlamada(aplicacion.id)
-    const { entrevista, loading: loadingEntrevista } = useEntrevistaLlamadaPorAplicacion(aplicacion.id, existe)
+    // Hook para cargar datos
+    const { entrevista, loading: loadingEntrevista } = useEntrevistaLlamadaPorAplicacion(aplicacion.id)
 
     // Hooks para operaciones CRUD
     const { crearEntrevista, loading: loadingCrear } = useCrearEntrevistaLlamada()
@@ -30,6 +32,9 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
     const [isEditMode, setIsEditMode] = useState(false)
     const [hasChanges, setHasChanges] = useState(false)
     const [originalData, setOriginalData] = useState<any>(null)
+    const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
+    const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
     const [formData, setFormData] = useState<{
         fecha_entrevista: string
@@ -102,8 +107,8 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                 interes_puesto: entrevista.interes_puesto,
                 pretension_monto: entrevista.pretension_monto,
                 pretension_negociable: entrevista.pretension_negociable as 'SI' | 'NO',
-                comentarios: entrevista.comentarios,
-                solicitar_referencias: entrevista.solicitar_referencias,
+                comentarios: entrevista.comentarios ?? '',
+                solicitar_referencias: entrevista.solicitar_referencias ?? '',
                 entrevistador_id: entrevista.entrevistador_id,
                 entrevistador_nombre: entrevista.entrevistador_nombre,
                 observaciones: entrevista.observaciones,
@@ -127,9 +132,115 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
         }
     }, [formData, originalData, isEditMode])
 
+    // Generar PDF cuando se abre el modal
+    useEffect(() => {
+        if (isPdfModalOpen && entrevista && !pdfBlobUrl) {
+            generatePdf()
+        }
+
+        // Limpiar URL del PDF cuando se cierra el modal
+        return () => {
+            if (!isPdfModalOpen && pdfBlobUrl) {
+                URL.revokeObjectURL(pdfBlobUrl)
+                setPdfBlobUrl(null)
+            }
+        }
+    }, [isPdfModalOpen, entrevista, pdfBlobUrl])
+
+
+    // Función para generar el PDF
+    const generatePdf = async () => {
+        if (!entrevista) return
+
+        setIsGeneratingPdf(true)
+        try {
+            const pdfDoc = <EntrevistaLlamadaPdf aplicacion={aplicacion} entrevista={entrevista} />
+            const blob = await pdf(pdfDoc).toBlob()
+            const blobUrl = URL.createObjectURL(blob)
+
+            setPdfBlobUrl(blobUrl)
+        } catch (error) {
+            console.error('Error generando PDF:', error)
+            showError('Error al generar el PDF', { duration: TOAST_DURATIONS.LONG })
+        } finally {
+            setIsGeneratingPdf(false)
+        }
+    }
+
+    // Función para abrir el modal del PDF
+    const handleOpenPdfModal = () => {
+        setIsPdfModalOpen(true)
+    }
+
     // Función para manejar cambios en inputs
     const handleInputChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }))
+    }
+
+    // Función para validar campos requeridos
+    const validateForm = (): string[] => {
+        const errors: string[] = []
+
+        if (!formData.fecha_entrevista?.trim()) {
+            errors.push('Fecha de Entrevista')
+        }
+        if (!formData.disponibilidad_actual?.trim()) {
+            errors.push('Disponibilidad Inmediata')
+        }
+        if (!formData.residencia_actual?.trim()) {
+            errors.push('Residencia')
+        }
+        if (formData.disponibilidad_viajar === undefined) {
+            errors.push('Disponibilidad para Viajar')
+        }
+        if (!formData.estudios?.trim()) {
+            errors.push('Estudios')
+        }
+        if (formData.estado_civil === undefined) {
+            errors.push('Estado Civil')
+        }
+        if (formData.hijos === undefined || formData.hijos < 0) {
+            errors.push('Número de Hijos')
+        }
+        if (formData.edad === undefined || formData.edad < 18) {
+            errors.push('Edad')
+        }
+        if (!formData.experiencia_general?.trim()) {
+            errors.push('Experiencia General')
+        }
+        if (formData.experiencia_rubro === undefined) {
+            errors.push('Experiencia en el Rubro')
+        }
+        if (!formData.busca_estabilidad?.trim()) {
+            errors.push('Busca Estabilidad')
+        }
+        if (!formData.retos_profesionales?.trim()) {
+            errors.push('Retos Profesionales')
+        }
+        if (formData.desenvolvimiento === undefined || formData.desenvolvimiento < 1 || formData.desenvolvimiento > 10) {
+            errors.push('Desenvolvimiento')
+        }
+        if (formData.conocimiento_perfil === undefined) {
+            errors.push('Conocimiento Según Perfil')
+        }
+        if (formData.interes_puesto === undefined || formData.interes_puesto < 1 || formData.interes_puesto > 10) {
+            errors.push('Interés en el Puesto')
+        }
+        if (formData.pretension_monto === undefined || formData.pretension_monto < 0) {
+            errors.push('Monto Solicitado')
+        }
+        if (formData.pretension_negociable === undefined) {
+            errors.push('Pretensión Negociable')
+        }
+        if (!formData.observaciones?.trim()) {
+            errors.push('Observaciones')
+        }
+        if (!formData.resultado?.trim()) {
+            errors.push('Resultado de la Entrevista')
+        }
+        // Comentarios y solicitar_referencias son opcionales según el usuario
+
+        return errors
     }
 
     // Función para manejar el modo edición
@@ -148,6 +259,19 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
 
     // Función para guardar/crear entrevista
     const handleSave = async () => {
+        // Validar campos requeridos
+        const validationErrors = validateForm()
+        if (validationErrors.length > 0) {
+            let missingFieldsMessage = ''
+            if (validationErrors.length <= 2) {
+                missingFieldsMessage = validationErrors.join(', ')
+            } else {
+                missingFieldsMessage = `${validationErrors.slice(0, 2).join(', ')}, etc`
+            }
+            showError(`Faltan completar los siguientes campos: ${missingFieldsMessage}`, { duration: TOAST_DURATIONS.LONG })
+            return
+        }
+
         try {
             // Preparar datos para crear (todos los campos requeridos)
             const crearData = {
@@ -204,7 +328,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                 resultado: formData.resultado
             }
 
-            if (existe && entrevista) {
+            if (entrevista) {
                 await actualizarEntrevista({ id: entrevista.id, input: actualizarData })
                 setIsEditMode(false)
                 setHasChanges(false)
@@ -216,13 +340,13 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                 // Esto permitirá que el botón cambie a "Editar"
                 showSuccess('Entrevista creada correctamente', { duration: TOAST_DURATIONS.QUICK })
             }
-            } catch (error) {
-                console.error('Error al guardar entrevista:', error)
-                showError('Error al guardar la entrevista. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
-            }
+        } catch (error) {
+            console.error('Error al guardar entrevista:', error)
+            showError('Error al guardar la entrevista. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
+        }
     }
 
-    const loading = loadingExiste || loadingEntrevista || loadingCrear || loadingActualizar
+    const loading = loadingEntrevista || loadingCrear || loadingActualizar
 
     // Validar si debe mostrar formulario o mensaje de requerimiento
     // Opciones para selects
@@ -249,10 +373,23 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
         <div className="space-y-6">
             {/* Información de la Entrevista */}
             <section>
-                        <h3 className="text-xs uppercase font-medium mb-3 flex items-center gap-2">
-                            <Calendar className="w-3.5 h-3.5" />
-                            Información de la Entrevista
-                        </h3>
+                <div className='flex items-center justify-between'>
+                    <h3 className="text-xs uppercase font-medium flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Información de la Entrevista
+                    </h3>
+                    {entrevista && (
+                        <Button
+                            variant="subtle"
+                            color="danger"
+                            size="icon"
+                            onClick={handleOpenPdfModal}
+                        >
+                            <FaRegFilePdf className="w-4 h-4" />
+                        </Button>
+                    )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {/* Fecha de Entrevista */}
                     <div className="space-y-1">
@@ -264,7 +401,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             value={formData.fecha_entrevista}
                             onChange={(e) => handleInputChange('fecha_entrevista', e.target.value)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -278,7 +415,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             value={formData.disponibilidad_actual}
                             onChange={(e) => handleInputChange('disponibilidad_actual', e.target.value)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
                 </div>
@@ -301,7 +438,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             value={formData.residencia_actual}
                             onChange={(e) => handleInputChange('residencia_actual', e.target.value)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -315,7 +452,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             placeholder="Seleccionar..."
                             value={formData.disponibilidad_viajar || ''}
                             onChange={(value) => handleInputChange('disponibilidad_viajar', value === '' ? undefined : value as 'SI' | 'NO')}
-                            disabled={!isEditMode && existe}
+                            disabled={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -329,7 +466,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             value={formData.estudios}
                             onChange={(e) => handleInputChange('estudios', e.target.value)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -343,7 +480,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             placeholder="Seleccionar..."
                             value={formData.estado_civil || ''}
                             onChange={(value) => handleInputChange('estado_civil', value === '' ? undefined : value as 'SOLTERO' | 'CASADO' | 'DIVORCIADO' | 'VIUDO' | 'CONVIVIENTE')}
-                            disabled={!isEditMode && existe}
+                            disabled={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -359,7 +496,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             min="0"
                             value={formData.hijos}
                             onChange={(e) => handleInputChange('hijos', parseInt(e.target.value) || 0)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -376,7 +513,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             max="100"
                             value={formData.edad}
                             onChange={(e) => handleInputChange('edad', parseInt(e.target.value) || 18)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
                 </div>
@@ -399,7 +536,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             value={formData.experiencia_general}
                             onChange={(e) => handleInputChange('experiencia_general', e.target.value)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -413,7 +550,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             placeholder="Seleccionar..."
                             value={formData.experiencia_rubro || ''}
                             onChange={(value) => handleInputChange('experiencia_rubro', value === '' ? undefined : value as 'BAJO' | 'MEDIO' | 'ALTO')}
-                            disabled={!isEditMode && existe}
+                            disabled={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -427,7 +564,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             value={formData.busca_estabilidad}
                             onChange={(e) => handleInputChange('busca_estabilidad', e.target.value)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -436,17 +573,12 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                         <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                             Retos Profesionales
                         </label>
-                        <textarea
+                        <Textarea
                             placeholder="¿Cuáles son sus principales retos o metas profesionales?"
-                            className="w-full h-20 px-3 py-2 text-xs border border-border-color rounded-md bg-transparent text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={3}
                             value={formData.retos_profesionales}
                             onChange={(e) => handleInputChange('retos_profesionales', e.target.value)}
-                            readOnly={!isEditMode && existe}
-                            style={{
-                                backgroundColor: 'var(--input-bg)',
-                                borderColor: 'var(--border-color)',
-                                color: 'var(--text-primary)'
-                            }}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
                 </div>
@@ -472,7 +604,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             max="10"
                             value={formData.desenvolvimiento}
                             onChange={(e) => handleInputChange('desenvolvimiento', parseInt(e.target.value) || 1)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -486,7 +618,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             placeholder="¿Cumple con el perfil requerido?"
                             value={formData.conocimiento_perfil || ''}
                             onChange={(value) => handleInputChange('conocimiento_perfil', value === '' ? undefined : value as 'SI' | 'NO')}
-                            disabled={!isEditMode && existe}
+                            disabled={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -503,7 +635,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             max="10"
                             value={formData.interes_puesto}
                             onChange={(e) => handleInputChange('interes_puesto', parseInt(e.target.value) || 1)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
                 </div>
@@ -528,7 +660,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             min="0"
                             value={formData.pretension_monto}
                             onChange={(e) => handleInputChange('pretension_monto', parseFloat(e.target.value) || 0)}
-                            readOnly={!isEditMode && existe}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -542,7 +674,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             placeholder="Seleccionar..."
                             value={formData.pretension_negociable || ''}
                             onChange={(value) => handleInputChange('pretension_negociable', value === '' ? undefined : value as 'SI' | 'NO')}
-                            disabled={!isEditMode && existe}
+                            disabled={!isEditMode && !!entrevista}
                         />
                     </div>
                 </div>
@@ -560,17 +692,12 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                         <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                             Comentarios del Entrevistador
                         </label>
-                        <textarea
+                        <Textarea
                             placeholder="Comentarios opcionales"
-                            className="w-full h-20 px-3 py-2 text-xs border border-border-color rounded-md bg-transparent text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={3}
                             value={formData.comentarios}
                             onChange={(e) => handleInputChange('comentarios', e.target.value)}
-                            readOnly={!isEditMode && existe}
-                            style={{
-                                backgroundColor: 'var(--input-bg)',
-                                borderColor: 'var(--border-color)',
-                                color: 'var(--text-primary)'
-                            }}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -579,17 +706,12 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                         <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                             Solicitar Referencias
                         </label>
-                        <textarea
+                        <Textarea
                             placeholder="Indicar si se deben solicitar referencias y observaciones"
-                            className="w-full h-20 px-3 py-2 text-xs border border-border-color rounded-md bg-transparent text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={3}
                             value={formData.solicitar_referencias}
                             onChange={(e) => handleInputChange('solicitar_referencias', e.target.value)}
-                            readOnly={!isEditMode && existe}
-                            style={{
-                                backgroundColor: 'var(--input-bg)',
-                                borderColor: 'var(--border-color)',
-                                color: 'var(--text-primary)'
-                            }}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -598,7 +720,7 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                         <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                             Responsable de la Entrevista
                         </label>
-                            <Input
+                        <Input
                             placeholder="Nombre del entrevistador"
                             className="h-8 text-xs"
                             readOnly
@@ -611,17 +733,12 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                         <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                             Observaciones
                         </label>
-                        <textarea
+                        <Textarea
                             placeholder="Observaciones adicionales"
-                            className="w-full h-20 px-3 py-2 text-xs border border-border-color rounded-md bg-transparent text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={3}
                             value={formData.observaciones}
                             onChange={(e) => handleInputChange('observaciones', e.target.value)}
-                            readOnly={!isEditMode && existe}
-                            style={{
-                                backgroundColor: 'var(--input-bg)',
-                                borderColor: 'var(--border-color)',
-                                color: 'var(--text-primary)'
-                            }}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
 
@@ -630,17 +747,12 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                         <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                             Resultado de la Entrevista
                         </label>
-                        <textarea
+                        <Textarea
                             placeholder="Resultado final de la entrevista"
-                            className="w-full h-20 px-3 py-2 text-xs border border-border-color rounded-md bg-transparent text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={3}
                             value={formData.resultado}
                             onChange={(e) => handleInputChange('resultado', e.target.value)}
-                            readOnly={!isEditMode && existe}
-                            style={{
-                                backgroundColor: 'var(--input-bg)',
-                                borderColor: 'var(--border-color)',
-                                color: 'var(--text-primary)'
-                            }}
+                            readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
                 </div>
@@ -676,15 +788,47 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             variant="custom"
                             color="primary"
                             size="xs"
-                            icon={existe ? <Edit className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                            onClick={existe ? handleEditMode : handleSave}
+                            icon={entrevista ? <Edit className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                            onClick={entrevista ? handleEditMode : handleSave}
                             disabled={loading}
                         >
-                            {loading ? 'Cargando...' : (existe ? 'Editar' : 'Guardar')}
+                            {loading ? 'Cargando...' : (entrevista ? 'Editar' : 'Guardar')}
                         </Button>
                     )}
                 </div>
             </section>
+
+            {/* Modal del PDF */}
+            <Modal
+                isOpen={isPdfModalOpen}
+                onClose={() => setIsPdfModalOpen(false)}
+                title="Vista Previa del PDF - Entrevista Telefónica"
+                size="lg-tall"
+            >
+                <div className="h-full w-full">
+                    {isGeneratingPdf ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+                                <p className="text-sm text-gray-600">Generando PDF...</p>
+                            </div>
+                        </div>
+                    ) : pdfBlobUrl ? (
+                        <iframe
+                            src={pdfBlobUrl}
+                            className="w-full h-full border-0"
+                            title="Vista Previa del PDF"
+                            allowFullScreen
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                                <p className="text-gray-600">No hay datos de entrevista disponibles</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </Modal>
         </div>
     )
 }

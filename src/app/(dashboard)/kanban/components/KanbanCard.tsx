@@ -2,11 +2,12 @@
 
 import { AplicacionCandidato } from '../lib/kanban.types'
 import { ESTADO_COLORES, PRIORIDAD_COLORES, COMPONENTE_COLORES, KANBAN_ESTADOS } from '../lib/kanban.constants'
-import { User, MapPin, DollarSign, Clock, Trophy, AlertTriangle, FileText } from 'lucide-react'
+import { User, MapPin, DollarSign , Trophy, AlertTriangle, FileText, Eye, FileSymlink } from 'lucide-react'
 
 // Genera un color determinístico y estable a partir de un id (convocatoriaId)
 // - No varía entre renders
-// - Usa una paleta de tonos espaciados para mejorar contraste y reducir repeticiones verdes
+// - Usa colores con intensidad similar a los botones (opacidad baja)
+// - Compatible con temas claros y oscuros
 function getConvocatoriaColor(id: string): string {
   let hash = 0
 
@@ -17,11 +18,12 @@ function getConvocatoriaColor(id: string): string {
 
   const hue = Math.abs(hash) % 360
 
-  // Variación controlada pero consistente
-  const saturation = 60 + (Math.abs(hash >> 3) % 20) // 60–79%
-  const lightness = 40 + (Math.abs(hash >> 6) % 15)  // 40–54%
+  // Usamos HSL con alpha para mantener consistencia con el patrón bg-{color}-500/10
+  const saturation = 65 + (Math.abs(hash >> 3) % 20) // 65–84% (similar a 500)
+  const lightness = 45 + (Math.abs(hash >> 6) % 25)  // 45–69% (similar a 500)
 
-  return `hsl(${hue} ${saturation}% ${lightness}%)`
+  // Opacidad del 10% como los botones (bg-{color}-500/10)
+  return `hsla(${hue}, ${saturation}%, ${lightness}%, 0.5)`
 }
 
 
@@ -42,6 +44,14 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
     minimumFractionDigits: 0,
   }).format(aplicacion.pretensionEconomica)
 
+  // Extraer nombre del CV
+  const nombreCV = aplicacion.curriculumUrl 
+    ? (() => {
+        const fileName = aplicacion.curriculumUrl.split('/').pop();
+        return fileName ? (fileName.length > 25 ? fileName.substring(0, 16) + '...' : fileName) : 'Sin CV';
+      })()
+    : 'Sin CV'
+
   // Calcular días en estado actual
   const diasEnEstado = aplicacion.tiempoEnEstadoDias || 0
 
@@ -55,7 +65,7 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
     <div
       onDoubleClick={onClick}
       className={`
-        relative border rounded-lg p-4 pl-4 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer
+        relative border rounded-lg p-4 pl-4 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden
         ${esPosibleCandidato ? 'border-amber-300 shadow-amber-100' : ''}
         ${onClick ? 'hover:border-blue-300 hover:scale-[1.02]' : ''}
       `}
@@ -63,13 +73,14 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
         backgroundColor: esPosibleCandidato ? COMPONENTE_COLORES.POSIBLES_CANDIDATOS.background : 'var(--card-bg)',
         borderColor: esPosibleCandidato ? COMPONENTE_COLORES.POSIBLES_CANDIDATOS.border : 'var(--border-color)'
       }}
-      title="Doble click para ver detalles"
+     
     >
+      
       {/* Barra vertical que identifica la convocatoria: más delgada y sutil */}
       {identificadorConvocatoria && (
         <div
           aria-hidden
-          className="absolute left-0 top-0 bottom-0 w-0.75 z-10 rounded-l-sm"
+          className="absolute left-0 top-0 bottom-0 w-[2px] z-10 rounded-l-sm"
           style={{
             backgroundColor: getConvocatoriaColor(identificadorConvocatoria),
             opacity: 0.9,
@@ -77,6 +88,26 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
           }}
         />
       )}
+
+      {/* Botón para móvil - visible solo en pantallas pequeñas */}
+      {onClick && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClick();
+          }}
+          className="block md:hidden absolute bottom-2 right-2 p-1.5 rounded-full bg-white/70 hover:bg-white shadow-sm border border-gray-200 touch-manipulation z-20"
+          aria-label="Ver detalles"
+        >
+          <Eye className="w-3 h-3 text-gray-600" />
+        </button>
+      )}
+
       {/* Header con nombre y avatar */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -105,21 +136,21 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
       {/* Información principal */}
       <div className="space-y-2 mb-3">
         <div className="flex items-center gap-2">
-          <MapPin className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+          <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             {aplicacion.convocatoria?.cargoNombre || 'Sin cargo'}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <FileText className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+          <FileText className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             {aplicacion.aniosExperienciaPuesto} años exp.
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <DollarSign className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+          <DollarSign className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
           <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
             {pretensionFormateada}
           </span>
@@ -136,13 +167,24 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
         </div>
       )}
 
-      {/* Footer con tiempo en estado */}
-      <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
+      {/* Footer con nombre del CV */}
+      <div className="flex items-center justify-between " style={{ borderColor: 'var(--border-color)' }}>
         <div className="flex items-center gap-1">
-          <Clock className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
-          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            {diasEnEstado === 0 ? 'Hoy' : `${diasEnEstado} día${diasEnEstado !== 1 ? 's' : ''}`}
-          </span>
+          <FileSymlink className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
+          <a 
+            href={aplicacion.curriculumUrl || '#'} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-xs hover:underline cursor-pointer transition-colors duration-200 text-blue-600 dark:text-blue-400" 
+            onClick={(e) => {
+              if (!aplicacion.curriculumUrl) {
+                e.preventDefault();
+                return;
+              }
+            }}
+          >
+            {nombreCV}
+          </a>
         </div>
 
         {/* Badge de repostulación */}

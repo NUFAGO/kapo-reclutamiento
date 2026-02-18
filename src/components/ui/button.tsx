@@ -1,24 +1,27 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { Loader2 } from "lucide-react"
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "default" | "outline" | "ghost" | "custom"
-  size?: "default" | "sm" | "lg" | "xs"
+  variant?: "default" | "outline" | "ghost" | "subtle" | "custom"
+  size?: "default" | "sm" | "lg" | "xs" | "icon"
   /** Color: puede ser predefinido, arbitrario (genera clases automáticamente), o personalizado completo */
   color?: string
   /** Color personalizado con clases CSS completas (máxima prioridad) */
   customColor?: string
   icon?: React.ReactNode
+  loading?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "xs", color, customColor, icon, children, ...props }, ref) => {
+  ({ className, variant = "default", size = "xs", color, customColor, icon, loading = false, children, ...props }, ref) => {
     // Variantes base
     const variants = {
-      default: "bg-primary text-primary-foreground hover:bg-primary/90",
-      outline: "border border-border bg-background hover:bg-accent",
+      default: "bg-gray-300/10 hover:bg-gray-400/10 text-gray-700 dark:text-white",
+      outline: "bg-gray-300/10 hover:bg-gray-400/10 text-gray-700 dark:text-white",
       ghost: "hover:bg-accent",
+      subtle: "flex items-center gap-1.5 text-xs rounded-lg bg-[var(--background)]/50 hover:bg-[var(--background)]/70 text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-sm hover:shadow transition-all duration-200",
       custom: "", // Para colores personalizados
     }
 
@@ -63,10 +66,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Tamaños con texto apropiado
     const sizes = {
-      default: "h-10 px-4 py-2 text-sm",
+      default: "h-8 px-3 py-1.5 text-xs gap-1.5",
       sm: "h-9 rounded-md px-3 text-sm",
       lg: "h-11 rounded-md px-8 text-base",
-      xs: "h-8 px-3 py-1.5 text-xs gap-1.5",
+      xs: variant === "subtle" ? "" : "h-8 px-3 py-1.5 text-xs gap-1.5",
+      icon: "h-8 w-8",
     }
 
     // Clase base para todos los botones
@@ -83,15 +87,29 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     if (variant === "custom") {
       // Prioridad: customColor > color predefinido > color generado automáticamente
       if (customColor) {
-        variantClasses = customColor // 
+        variantClasses = customColor //
       } else if (color) {
         // Verificar si es un color predefinido usando 'in' operator
         if (color in predefinedColors) {
-          variantClasses = predefinedColors[color as keyof typeof predefinedColors] // 
+          variantClasses = predefinedColors[color as keyof typeof predefinedColors] //
         } else {
-          variantClasses = generateColorClasses(color) // 
+          variantClasses = generateColorClasses(color) //
         }
       }
+    } else if (color || customColor) {
+      // Para otros variants (como subtle), aplicar colores si se especifican
+      let colorClasses = ""
+      if (customColor) {
+        colorClasses = customColor
+      } else if (color) {
+        if (color in predefinedColors) {
+          colorClasses = predefinedColors[color as keyof typeof predefinedColors]
+        } else {
+          colorClasses = generateColorClasses(color)
+        }
+      }
+      // Combinar las clases de variant con las de color
+      variantClasses = variantClasses + " " + colorClasses
     }
 
     return (
@@ -103,9 +121,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         ref={ref}
+        disabled={loading || props.disabled}
         {...props}
       >
-        {icon && <span className="shrink-0">{icon}</span>}
+        {(loading || icon) && (
+          <span className="shrink-0">
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              icon
+            )}
+          </span>
+        )}
         {children}
       </button>
     )

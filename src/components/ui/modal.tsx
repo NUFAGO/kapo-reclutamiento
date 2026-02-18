@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'sm-tall' | 'md-tall' | 'lg-tall' | 'xl-tall' | 'full-tall';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -16,6 +16,7 @@ export interface ModalProps {
   closeOnClickOutside?: boolean;
   closeOnEsc?: boolean;
   footer?: React.ReactNode;
+  headerBackground?: string;
 }
 
 const MODAL_SIZE_CLASSES: Record<ModalSize, string> = {
@@ -24,6 +25,11 @@ const MODAL_SIZE_CLASSES: Record<ModalSize, string> = {
   lg: 'max-w-4xl',
   xl: 'max-w-7xl',
   full: 'max-w-full mx-[100px]',
+  'sm-tall': 'max-w-md',
+  'md-tall': 'max-w-2xl',
+  'lg-tall': 'max-w-4xl',
+  'xl-tall': 'max-w-7xl',
+  'full-tall': 'max-w-full mx-[100px]',
 };
 
 export default function Modal({
@@ -36,6 +42,7 @@ export default function Modal({
   closeOnClickOutside = true,
   closeOnEsc = true,
   footer,
+  headerBackground,
 }: ModalProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -102,8 +109,8 @@ export default function Modal({
             transform: isAnimating ? 'translateY(0) scale(1)' : 'translateY(-20px) scale(0.98)',
             display: 'flex',
             flexDirection: 'column',
-            // Solo aplicar altura fija para modales grandes (xl y full)
-            ...(size === 'xl' || size === 'full' ? {
+            // Aplicar altura fija para modales con sufijo -tall
+            ...(size.endsWith('-tall') ? {
               maxHeight: '91vh',
               height: '91vh',
             } : {
@@ -114,8 +121,12 @@ export default function Modal({
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border-color">
-              {title && (
+            // aqui
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b border-border-color"
+              style={headerBackground ? { background: headerBackground } : undefined}
+            > 
+               {title && (
                 React.isValidElement(title) ? (
                   <div className="flex-1">
                     {title}

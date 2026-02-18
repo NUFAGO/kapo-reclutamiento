@@ -253,7 +253,7 @@ const Label: React.FC<{ htmlFor?: string; children: React.ReactNode; className?:
   children,
   className = ""
 }) => (
-  <label htmlFor={htmlFor} className={`block text-xs font-medium text-gray-700 mb-1 ${className}`}>
+  <label htmlFor={htmlFor} className={`block text-xs font-medium text-text-primary mb-1 ${className}`}>
     {children}
   </label>
 );
@@ -287,7 +287,7 @@ const Textarea: React.FC<{
     onChange={onChange}
     placeholder={placeholder}
     rows={rows}
-    className={`w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 text-xs placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${className}`}
+    className={`w-full px-3 py-2 border border-border-color rounded-md bg-card-bg text-text-primary text-xs placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary resize-none ${className}`}
   />
 );
 
@@ -298,9 +298,9 @@ const Badge: React.FC<{ variant?: 'default' | 'secondary' | 'outline'; children:
   className = ""
 }) => {
   const variants = {
-    default: 'bg-blue-100 text-blue-800',
-    secondary: 'bg-gray-100 text-gray-800',
-    outline: 'border border-gray-300 text-gray-700'
+    default: 'bg-primary/10 text-primary',
+    secondary: 'bg-secondary text-secondary-foreground',
+    outline: 'border border-border-color text-text-primary'
   };
 
   return (
@@ -473,11 +473,11 @@ export const FormularioConfigModal: React.FC<FormularioConfigModalProps> = ({
 
   const modalTitle = (
     <div>
-      <h2 className="text-sm font-semibold text-gray-900">
+      <h2 className="text-sm font-semibold text-text-primary">
         Configurar Formulario
       </h2>
       {tituloConvocatoria && (
-        <p className="text-xs text-gray-600 mt-1">
+        <p className="text-xs text-text-secondary mt-1">
           {tituloConvocatoria}
         </p>
       )}
@@ -578,7 +578,7 @@ export const FormularioConfigModal: React.FC<FormularioConfigModalProps> = ({
                   Copiar
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-text-secondary mt-1">
                 Comparte esta URL para que los candidatos puedan acceder al formulario
               </p>
             </div>
@@ -628,10 +628,10 @@ export const FormularioConfigModal: React.FC<FormularioConfigModalProps> = ({
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     {getTipoIcon(campo.tipo)}
                     <div className="min-w-0 flex-1">
-                        <div className="font-medium text-xs text-gray-900 truncate">
+                        <div className="font-medium text-xs text-text-primary truncate">
                           {campo.etiqueta}
                         </div>
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-text-secondary">
                           {getTipoLabel(campo.tipo)} • {campo.nombre}
                         </div>
                     </div>
