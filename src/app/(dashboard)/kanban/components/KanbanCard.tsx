@@ -2,7 +2,10 @@
 
 import { AplicacionCandidato } from '../lib/kanban.types'
 import { ESTADO_COLORES, PRIORIDAD_COLORES, COMPONENTE_COLORES, KANBAN_ESTADOS } from '../lib/kanban.constants'
-import { User, MapPin, DollarSign , Trophy, AlertTriangle, FileText, Eye, FileSymlink } from 'lucide-react'
+import { User, MapPin, DollarSign , Trophy, AlertTriangle, FileText, Eye, FileSymlink, Star } from 'lucide-react'
+import { LuBriefcaseBusiness } from "react-icons/lu";
+import { FaAward } from "react-icons/fa";
+
 
 // Genera un color determinístico y estable a partir de un id (convocatoriaId)
 // - No varía entre renders
@@ -136,9 +139,16 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
       {/* Información principal */}
       <div className="space-y-2 mb-3">
         <div className="flex items-center gap-2">
-          <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
+          <LuBriefcaseBusiness  className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
           <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
             {aplicacion.convocatoria?.cargoNombre || 'Sin cargo'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <FaAward className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
+          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {aplicacion.convocatoria?.especialidad_nombre || 'Sin especialidad'}
           </span>
         </div>
 

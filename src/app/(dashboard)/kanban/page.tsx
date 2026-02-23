@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { AplicacionCandidato } from './lib/kanban.types'
+import { useState, useRef, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { AplicacionCandidato, EstadoKanban } from './lib/kanban.types'
 import { KanbanHeader } from './components/KanbanHeader'
 import { KanbanBoard } from './KanbanBoard'
 import CandidateModal from './components/modals/candidato/CandidateModal'
@@ -29,16 +30,50 @@ function getConvocatoriaColor(id: string): string {
 }
 
 export default function KanbanPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [convocatoriaSeleccionada, setConvocatoriaSeleccionada] = useState<string | null>(null)
   const [mostrarSoloDuplicados, setMostrarSoloDuplicados] = useState(false)
   const [selectedAplicacion, setSelectedAplicacion] = useState<AplicacionCandidato | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [viewMode, setViewModeState] = useState<'main' | 'archived'>('main')
+  const onAplicacionStateChangedRef = useRef<((aplicacionId: string, newEstado: EstadoKanban) => void) | undefined>(undefined)
+
+  // Inicializar viewMode desde URL params
+  useEffect(() => {
+    const viewParam = searchParams.get('view')
+    if (viewParam === 'archived') {
+      setViewModeState('archived')
+    } else {
+      setViewModeState('main')
+    }
+  }, [searchParams])
+
+  // Función para cambiar viewMode y actualizar URL
+  const setViewMode = (newViewMode: 'main' | 'archived') => {
+    setViewModeState(newViewMode)
+    
+    // Actualizar URL params
+    const newSearchParams = new URLSearchParams(searchParams.toString())
+    if (newViewMode === 'archived') {
+      newSearchParams.set('view', 'archived')
+    } else {
+      newSearchParams.delete('view')
+    }
+    
+    const newUrl = newSearchParams.toString() 
+      ? `?${newSearchParams.toString()}`
+      : window.location.pathname
+    
+    router.push(newUrl, { scroll: false })
+  }
 
  
 
   // Handler para cuando se hace click en una aplicación
-  const handleAplicacionClick = (aplicacion: AplicacionCandidato) => {
+  const handleAplicacionClick = (aplicacion: AplicacionCandidato, onMove?: (aplicacionId: string, newEstado: EstadoKanban) => void) => {
     setSelectedAplicacion(aplicacion)
+    onAplicacionStateChangedRef.current = onMove
     setIsModalOpen(true)
   }
 
@@ -68,6 +103,8 @@ export default function KanbanPage() {
         onConvocatoriaChange={handleConvocatoriaChange}
         onToggleDuplicados={handleToggleDuplicados}
         mostrarSoloDuplicados={mostrarSoloDuplicados}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {/* Board principal */}
@@ -75,6 +112,7 @@ export default function KanbanPage() {
         <KanbanBoard
           convocatoriaId={convocatoriaSeleccionada || undefined}
           onAplicacionClick={handleAplicacionClick}
+          viewMode={viewMode}
         />
       </div>
 
@@ -85,6 +123,7 @@ export default function KanbanPage() {
           onClose={handleCloseModal}
           aplicacion={selectedAplicacion}
           headerBackground={getConvocatoriaColor(selectedAplicacion.convocatoriaId || '')}
+          onAplicacionStateChanged={onAplicacionStateChangedRef.current}
         />
       )}
     </div>

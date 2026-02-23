@@ -7,7 +7,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { graphqlRequest } from '@/lib/graphql-client'
-import { CAMBIAR_ESTADO_KANBAN_MUTATION } from '@/graphql/mutations'
+import { CAMBIAR_ESTADO_KANBAN_MUTATION, REACTIVAR_APLICACION_MUTATION } from '@/graphql/mutations'
 import { EstadoKanban, KANBAN_ESTADOS } from '@/app/(dashboard)/kanban/lib/kanban.constants'
 import { useAuth } from '@/context/auth-context'
 import { useRegistrarCambioHistorial, TipoCambioHistorial } from './useHistorialCandidato'
@@ -53,17 +53,18 @@ export function useCambiarEstadoKanban() {
       estadoKanban,
       motivo,
       comentarios,
-      candidatoId
+      candidatoId,
+      estadoAnterior
     }: {
       id: string;
       estadoKanban: EstadoKanban;
       motivo?: string;
       comentarios?: string;
       candidatoId?: string;
+      estadoAnterior?: EstadoKanban;
     }) => {
-      // Obtener datos actuales de la aplicación para el estado anterior
-      const aplicacionActual = queryClient.getQueryData(['aplicacion', id]) as any
-      const estadoAnterior = aplicacionActual?.estadoKanban || aplicacionActual?.estado || 'CVS_RECIBIDOS'
+      // Usar estadoAnterior proporcionado o fallback
+      const estadoAnteriorFinal = estadoAnterior || 'CVS_RECIBIDOS'
 
       // Ejecutar el cambio de estado
       const response = await graphqlRequest<{
@@ -73,11 +74,11 @@ export function useCambiarEstadoKanban() {
       // Registrar en el historial
       try {
         await registrarCambio({
-          candidatoId: candidatoId || aplicacionActual?.candidatoId || '',
+          candidatoId: candidatoId || '',
           aplicacionId: id,
-          estadoAnterior,
+          estadoAnterior: estadoAnteriorFinal,
           estadoNuevo: estadoKanban,
-          tipoCambio: determinarTipoCambio(estadoAnterior, estadoKanban),
+          tipoCambio: determinarTipoCambio(estadoAnteriorFinal, estadoKanban),
           realizadoPor: user?.id || '',
           realizadoPorNombre: user?.nombresA || 'Sistema',
           motivo,
@@ -92,23 +93,73 @@ export function useCambiarEstadoKanban() {
     },
     onSuccess: (data) => {
       // Invalidar queries relacionadas para refrescar datos
-      queryClient.invalidateQueries({ queryKey: ['aplicaciones'] })
-      queryClient.invalidateQueries({ queryKey: ['aplicacion', data.id] })
-      queryClient.invalidateQueries({ queryKey: ['kanban-data'] })
-      queryClient.invalidateQueries({ queryKey: ['estadisticas-convocatoria'] })
-
-      // Actualizar el estado local si existe en cache
-      queryClient.setQueryData(['aplicacion', data.id], (oldData: any) => {
-        if (oldData) {
-          return { ...oldData, estadoKanban: data.estadoKanban }
-        }
-        return oldData
-      })
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['aplicaciones'] })
+        queryClient.invalidateQueries({ queryKey: ['estadisticas-convocatoria'] })
+        queryClient.invalidateQueries({ queryKey: ['historial'] }) // Invalidar cache del historial
+      }, 0)
     },
   })
 
   return {
     cambiarEstado: mutation.mutateAsync,
+    loading: mutation.isPending,
+    error: mutation.error,
+    data: mutation.data,
+  }
+}
+
+/**
+ * Hook para reactivar una aplicación desde estados archivados
+ */
+export function useReactivarAplicacion() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+
+  const mutation = useMutation({
+    mutationFn: async ({
+      id,
+      motivo,
+      comentarios
+    }: {
+      id: string;
+      motivo?: string;
+      comentarios?: string;
+    }) => {
+      if (!user?.id) {
+        throw new Error('Usuario no autenticado')
+      }
+
+      const response = await graphqlRequest<{
+        reactivarAplicacion: AplicacionBasica & {
+          candidato: {
+            id: string;
+            nombres: string;
+            apellidoPaterno: string;
+            apellidoMaterno: string;
+          }
+        }
+      }>(REACTIVAR_APLICACION_MUTATION, {
+        id,
+        realizadoPor: user.id,
+        realizadoPorNombre: user.nombresA || 'Usuario',
+        motivo,
+        comentarios
+      })
+
+      return response.reactivarAplicacion
+    },
+    onSuccess: (data) => {
+      // Invalidar queries relacionadas para refrescar datos
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['aplicaciones'] })
+        queryClient.invalidateQueries({ queryKey: ['estadisticas-convocatoria'] })
+      }, 0)
+    },
+  })
+
+  return {
+    reactivarAplicacion: mutation.mutateAsync,
     loading: mutation.isPending,
     error: mutation.error,
     data: mutation.data,

@@ -24,6 +24,14 @@ export {
   GET_KANBAN_DATA_QUERY
 } from './aplicacion.queries'
 
+// Candidato queries
+export {
+  LISTAR_CANDIDATOS_QUERY,
+  BUSCAR_CANDIDATO_POR_DNI_QUERY,
+  LISTAR_CANDIDATOS_ENCRYPTED_QUERY,
+  OBTENER_CANDIDATO_ENCRYPTED_QUERY
+} from './candidato.queries'
+
 // Entrevista de llamada queries
 export {
   OBTENER_ENTREVISTA_LLAMADA_QUERY,

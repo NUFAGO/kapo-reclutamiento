@@ -52,7 +52,7 @@ interface FormularioConfig {
   titulo: string;
   descripcion?: string;
   campos: CampoFormulario[];
-  estado: 'BORRADOR' | 'ACTIVO' | 'INACTIVO';
+  estado: 'ACTIVO' | 'INACTIVO';
   urlPublico?: string;
   tokenJwt?: string;
   fechaPublicacion?: Date;
@@ -541,10 +541,9 @@ export const FormularioConfigModal: React.FC<FormularioConfigModalProps> = ({
             <Select
               value={config.estado}
               onChange={(value) =>
-                setConfig(prev => ({ ...prev, estado: value as 'BORRADOR' | 'ACTIVO' | 'INACTIVO' }))
+                setConfig(prev => ({ ...prev, estado: value as 'ACTIVO' | 'INACTIVO' }))
               }
               options={[
-                { value: 'BORRADOR', label: 'Borrador' },
                 { value: 'ACTIVO', label: 'Activo' },
                 { value: 'INACTIVO', label: 'Inactivo' }
               ]}
@@ -578,7 +577,7 @@ export const FormularioConfigModal: React.FC<FormularioConfigModalProps> = ({
                   Copiar
                 </Button>
               </div>
-              <p className="text-xs text-text-secondary mt-1">
+              <p className="text-[10px] text-text-secondary">
                 Comparte esta URL para que los candidatos puedan acceder al formulario
               </p>
             </div>

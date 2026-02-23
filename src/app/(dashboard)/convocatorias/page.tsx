@@ -172,7 +172,6 @@ export default function ConvocatoriasPage() {
       render: (value: string, row: Convocatoria) => {
         const lines = [
           value || 'No especificado',
-          row.categoria_nombre,
           row.especialidad_nombre
         ].filter(Boolean);
 
@@ -366,7 +365,6 @@ export default function ConvocatoriasPage() {
         <DataTable
           data={convocatorias}
           columns={columns}
-          title="Convocatorias"
           subtitle={`Total: ${convocatorias.length} convocatorias`}
           showPagination={true}
           fixedRows={10}
@@ -403,7 +401,7 @@ export default function ConvocatoriasPage() {
           onClose={handleCloseFormModal}
           onSave={handleSaveFormConfig}
           convocatoriaId={selectedConvocatoria.id}
-          tituloConvocatoria={`${selectedConvocatoria.cargo_nombre || 'Sin cargo'} - ${selectedConvocatoria.codigo_convocatoria}`}
+          tituloConvocatoria={`${selectedConvocatoria.cargo_nombre || 'Sin cargo'} ${selectedConvocatoria.especialidad_nombre ? `(${selectedConvocatoria.especialidad_nombre})` : ''} - ${selectedConvocatoria.codigo_convocatoria}`.trim()}
           configExistente={existingFormConfig}
         />
       )}

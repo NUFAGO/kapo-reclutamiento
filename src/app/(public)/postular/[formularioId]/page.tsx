@@ -3,11 +3,15 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { graphqlRequest } from '@/lib/graphql-client';
-import { OBTENER_FORMULARIO_CONFIG_POR_ID_QUERY } from '@/graphql/queries';
+import { OBTENER_FORMULARIO_CONFIG_POR_ID_QUERY, LISTAR_CANDIDATOS_ENCRYPTED_QUERY } from '@/graphql/queries';
 import { CREAR_APLICACION_MUTATION } from '@/graphql/mutations';
+import { CryptoUtil } from '@/utils/crypto';
 import toast from 'react-hot-toast';
 import { Button, Input, LoadingSpinner, Select } from '@/components/ui';
 import { useFileUpload, UPLOAD_CONFIGS } from '@/hooks/useFileUpload';
+import { normalizeText, similarity, nameSimilarityAdvanced, totalSimilarity } from '@/utils/similarity';
+import Lottie from 'lottie-react';
+import alarmClockData from '@/assets/alarm-clock.json';
 
 interface CampoFormulario {
   id: string;
@@ -46,9 +50,27 @@ export default function PostularPage() {
   const [config, setConfig] = useState<FormularioConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formularioExpirado, setFormularioExpirado] = useState(false);
+  const [envioExitoso, setEnvioExitoso] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // Estados para verificación de DNI
+  const [dniExists, setDniExists] = useState(false);
+  const [loadingDniCheck, setLoadingDniCheck] = useState(false);
+  const [existingCandidate, setExistingCandidate] = useState<{
+    dni: string;
+    nombres: string;
+    apellidoPaterno: string;
+    apellidoMaterno: string;
+    correo: string;
+    telefono: string;
+  } | null>(null);
+  const [dniConfirmed, setDniConfirmed] = useState(false);
+  
+  // Ref para controlar la longitud anterior del DNI
+  const previousDniLength = useRef(0);
   
   // Hook para subir archivos
   const { uploadFile, uploadMultipleFiles, isUploading, error: uploadError, clearError } = useFileUpload();
@@ -68,13 +90,34 @@ export default function PostularPage() {
         }
 
         if (formConfig.estado !== 'ACTIVO') {
-          setError('Este formulario no está disponible');
+          setFormularioExpirado(true);
+          setLoading(false);
           return;
         }
 
-        if (formConfig.fechaExpiracion && new Date() > new Date(formConfig.fechaExpiracion)) {
-          setError('Este formulario ha expirado');
-          return;
+        if (formConfig.fechaExpiracion) {
+          const fechaExpiracion = new Date(formConfig.fechaExpiracion);
+          const hoy = new Date();
+
+          // Comparar componentes de fecha en UTC para evitar problemas de zona horaria
+          const hoyAnio = hoy.getUTCFullYear();
+          const hoyMes = hoy.getUTCMonth();
+          const hoyDia = hoy.getUTCDate();
+
+          const expAnio = fechaExpiracion.getUTCFullYear();
+          const expMes = fechaExpiracion.getUTCMonth();
+          const expDia = fechaExpiracion.getUTCDate();
+
+          // Comparar fechas: si hoy es posterior al día de expiración
+          const hoyEsPosterior = (hoyAnio > expAnio) ||
+                                (hoyAnio === expAnio && hoyMes > expMes) ||
+                                (hoyAnio === expAnio && hoyMes === expMes && hoyDia > expDia);
+
+          if (hoyEsPosterior) {
+            setFormularioExpirado(true);
+            setLoading(false);
+            return;
+          }
         }
 
         setConfig(formConfig);
@@ -102,6 +145,75 @@ export default function PostularPage() {
     }
   }, [formularioId]);
 
+  // useEffect para verificar DNI automáticamente cuando alcanza 8 dígitos
+  useEffect(() => {
+    if (formData.dni && formData.dni.length === 8 && /^\d{8}$/.test(formData.dni) && previousDniLength.current < 8) {
+      handleDniBlur();
+    }
+    previousDniLength.current = formData.dni?.length || 0;
+  }, [formData.dni]);
+
+  // useEffect para confirmar identidad cuando se completan los campos
+  useEffect(() => {
+    if (existingCandidate && formData.dni && formData.nombres && formData.apellido_paterno && formData.apellido_materno && formData.correo && formData.telefono) {
+      const enteredCandidate: { dni: string; nombres: string; apellidoPaterno: string; apellidoMaterno: string; correo: string; telefono: string } = {
+        dni: formData.dni as string,
+        nombres: formData.nombres,
+        apellidoPaterno: formData.apellido_paterno,
+        apellidoMaterno: formData.apellido_materno,
+        correo: formData.correo,
+        telefono: formData.telefono
+      };
+
+      const totalScore = totalSimilarity(enteredCandidate, existingCandidate);
+
+      if (totalScore >= 83) {
+        setDniConfirmed(true);
+      } else {
+        setDniConfirmed(false);
+      }
+    } else {
+      setDniConfirmed(false);
+    }
+  }, [formData.nombres, formData.apellido_paterno, formData.apellido_materno, formData.correo, formData.telefono, existingCandidate]);
+
+  const handleDniBlur = async () => {
+    const dniValue = formData.dni;
+    if (dniValue && dniValue.length === 8 && /^\d{8}$/.test(dniValue)) {
+      setLoadingDniCheck(true);
+      try {
+        const response = await graphqlRequest(LISTAR_CANDIDATOS_ENCRYPTED_QUERY, {
+          dni: dniValue,
+          limit: 1,
+          offset: 0
+        });
+        
+        const total = response.listarCandidatosEncriptados.total;
+        setDniExists(total > 0);
+        
+        if (total > 0) {
+          // Desencriptar los datos del candidato
+          const encryptedCandidate = response.listarCandidatosEncriptados.candidatos[0];
+          const decryptedCandidate = {
+            dni: CryptoUtil.decrypt(encryptedCandidate.dni),
+            nombres: CryptoUtil.decrypt(encryptedCandidate.nombres),
+            apellidoPaterno: CryptoUtil.decrypt(encryptedCandidate.apellidoPaterno),
+            apellidoMaterno: CryptoUtil.decrypt(encryptedCandidate.apellidoMaterno),
+            correo: CryptoUtil.decrypt(encryptedCandidate.correo),
+            telefono: CryptoUtil.decrypt(encryptedCandidate.telefono)
+          };
+          setExistingCandidate(decryptedCandidate);
+        } else {
+          setExistingCandidate(null);
+        }
+      } catch (error) {
+        console.error('Error al verificar DNI:', error);
+      } finally {
+        setLoadingDniCheck(false);
+      }
+    }
+  };
+
   const handleFieldChange = (fieldName: string, value: any) => {
     // Sanitización básica en frontend
     let sanitizedValue = value;
@@ -122,6 +234,13 @@ export default function PostularPage() {
     }
 
     setFormData(prev => ({ ...prev, [fieldName]: sanitizedValue }));
+    
+    // Reset verificación de DNI si cambia
+    if (fieldName === 'dni') {
+      setDniExists(false);
+      setExistingCandidate(null);
+      setDniConfirmed(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -248,6 +367,13 @@ export default function PostularPage() {
       return;
     }
 
+    // Validación de identidad confirmada si existe candidato
+    if (existingCandidate && !dniConfirmed) {
+      toast.error('Debes confirmar tu identidad completando los campos correctamente.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       // Verificar que la configuración esté cargada (aunque el botón ya está deshabilitado)
       if (!config.convocatoriaId) {
@@ -309,15 +435,28 @@ export default function PostularPage() {
         return key ? formData[key] : undefined;
       };
 
+      // Debug: Ver qué valores llegan
+      console.log('FormData completo:', formData);
+      console.log('Campo anios_experiencia_general:', formData['anios_experiencia_general']);
+      console.log('Campo medio_convocatoria:', formData['medio_convocatoria']);
+
       const valExpPuesto = Number(formData['anios_experiencia_puesto']) || findValue(['experiencia_puesto']) || 0;
       const valExpGeneral = Number(formData['anios_experiencia_general']) || Number(formData['experiencia_general']) || findValue(['experiencia_general']) || 0;
       const valMedio = formData['medio_convocatoria'] || formData['medio_enterado'] || findValue(['medio', 'enterado']) || 'Otro';
       const valPretension = Number(formData['pretension_economica']) || findValue(['pretension', 'economica', 'salario']) || 0;
 
-      // 🔥 NUEVO: Usar URLs de archivos subidos en lugar del hardcode
+      console.log('Valores procesados:', {
+        valExpGeneral,
+        valExpPuesto,
+        valMedio,
+        valPretension
+      });
+
+      // NUEVO: Usar URLs de archivos subidos en lugar del hardcode
       const curriculumUrl = archivosSubidos.curriculum || archivosSubidos.cv || archivosSubidos['cv-documento'] || 'simulado-cv.pdf';
 
       // Preparar datos para la aplicación
+      // Eliminar camposEspecificos para que el backend use respuestasFormulario
       const aplicacionData = {
         convocatoriaId: config.convocatoriaId,
         candidatoData: {
@@ -328,27 +467,26 @@ export default function PostularPage() {
           correo: formData.correo,
           telefono: formData.telefono,
           lugarResidencia: formData.lugar_residencia,
-          curriculumUrl: curriculumUrl // ✅ Ahora usa URL real
+          curriculumUrl: curriculumUrl
         },
         // Enviar TODOS los datos del formulario como respuestas dinámicas
         respuestasFormulario: {
           ...formData,
-          ...archivosSubidos, // ✅ Incluir URLs de archivos subidos
+          ...archivosSubidos,
           medio_convocatoria: valMedio,
           anios_experiencia_general: Number(valExpGeneral) || 0,
         },
-        // Campos específicos normalizados
+        // Campos específicos normalizados - RESTAURADOS COMO REQUIERE EL BACKEND
         camposEspecificos: {
           aniosExperienciaPuesto: Number(valExpPuesto) || 0,
           aniosExperienciaGeneral: Number(valExpGeneral) || 0,
           medioConvocatoria: String(valMedio),
           pretensionEconomica: Number(valPretension) || 0,
-          curriculumUrl: curriculumUrl // ✅ Ahora usa URL real
+          curriculumUrl: curriculumUrl
         },
         aplicadoPor: 'CANDIDATO' as const
       };
 
-      console.log('Enviando aplicacionData:', aplicacionData);
 
       // Enviar datos a través de GraphQL
       const response = await graphqlRequest(CREAR_APLICACION_MUTATION, {
@@ -356,7 +494,16 @@ export default function PostularPage() {
       });
 
       console.log('Aplicación creada:', response);
-      toast.success('¡Postulación enviada exitosamente!');
+      
+      // Limpiar todo el estado del formulario
+      setFormData({});
+      setHoneypot('');
+      setDniExists(false);
+      setExistingCandidate(null);
+      setDniConfirmed(false);
+      
+      // Mostrar pantalla de éxito
+      setEnvioExitoso(true);
     } catch (error) {
       console.error('Error al enviar postulación:', error);
       toast.error('Error al enviar la postulación. Por favor intenta nuevamente.');
@@ -364,6 +511,54 @@ export default function PostularPage() {
       setSubmitting(false);
     }
   };
+
+  if (envioExitoso) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center max-w-md p-8 bg-white rounded-3xl border border-gray-200 shadow-lg">
+          <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">¡Postulación enviada!</h1>
+          <p className="text-base text-gray-700 mb-6 leading-relaxed">
+            Tu postulación ha sido enviada exitosamente. Gracias por tu interés en formar parte de nuestro equipo.
+          </p>
+          <div className="bg-blue-50 rounded-xl p-4 mb-6">
+            <p className="text-sm text-blue-800">
+              <strong>Próximos pasos:</strong> Si eres seleccionado para el proceso de selección, nos comunicaremos contigo pronto. 
+              Te recomendamos estar atento a tu correo electrónico y teléfono.
+            </p>
+          </div>
+          <p className="text-xs text-gray-500">
+            Recuerda que puedes postular a otras convocatorias disponibles.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (formularioExpirado) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center max-w-md p-8 bg-white rounded-3xl border border-gray-200 shadow-lg">
+          <div className="w-32 h-32 mx-auto mb-6">
+            <Lottie
+              animationData={alarmClockData}
+              loop={true}
+              autoplay={true}
+              style={{ width: '100%', height: '100%' }}
+            />
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900 mb-3">Este formulario ha expirado</h1>
+          <p className="text-sm text-gray-600">
+            El plazo para enviar postulaciones ha terminado. Te invitamos a estar atento a nuevas convocatorias.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -411,11 +606,21 @@ export default function PostularPage() {
 
         {/* Header minimalista */}
         <div className="mb-2 rounded-2xl backdrop-blur-xs px-5 py-2 border">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full mb-4">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></div>
-            <span className="text-xs font-medium text-blue-700">Postulación</span>
+          <div className="flex items-center justify-between  mb-1">
+
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full">
+              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium text-blue-700">Postulación</span>
+            </div>
+
+            <img 
+              src="/logo-inacons.png" 
+              alt="Inacons Logo" 
+              className="w-40 h-10 object-contain"
+            />
+            
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">
+          <h1 className="text-xl uppercase font-bold text-gray-900 mb-2 tracking-tight">
             {config.titulo}
           </h1>
           {config.descripcion && (
@@ -450,6 +655,9 @@ export default function PostularPage() {
                     campo={campo}
                     value={formData[campo.nombre]}
                     onChange={(value) => handleFieldChange(campo.nombre, value)}
+                    dniExists={dniExists}
+                    loadingDniCheck={loadingDniCheck}
+                    dniConfirmed={dniConfirmed}
                   />
                 ))}
 
@@ -474,7 +682,7 @@ export default function PostularPage() {
             <div className="space-y-3">
               <button
                 type="submit"
-                disabled={!config || loading || submitting || isUploading}
+                disabled={!config || loading || submitting || isUploading || Boolean(existingCandidate && !dniConfirmed)}
                 className="w-full bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium py-3.5 px-4 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
               >
                 {submitting || isUploading ? (
@@ -509,6 +717,9 @@ interface FormFieldProps {
   value: any;
   onChange: (value: any) => void;
   isTerminosField?: boolean;
+  dniExists?: boolean;
+  loadingDniCheck?: boolean;
+  dniConfirmed?: boolean;
 }
 
 interface FileUploadComponentProps {
@@ -517,7 +728,7 @@ interface FileUploadComponentProps {
   onChange: (value: any) => void;
 }
 
-function FormField({ campo, value, onChange, isTerminosField = false }: FormFieldProps) {
+function FormField({ campo, value, onChange, isTerminosField = false, dniExists, loadingDniCheck, dniConfirmed }: FormFieldProps) {
   const textareaClasses = "w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 bg-white placeholder-gray-400 text-gray-900 resize-vertical";
 
   // Convertir opciones del campo a formato SelectOption
@@ -525,6 +736,11 @@ function FormField({ campo, value, onChange, isTerminosField = false }: FormFiel
     value: opcion,
     label: opcion,
   }));
+
+  // Logging para depurar DNI
+  if (campo.nombre === 'dni') {
+    // Logging removed for production
+  }
 
   if (campo.tipo === 'checkbox') {
     return (
@@ -548,118 +764,133 @@ function FormField({ campo, value, onChange, isTerminosField = false }: FormFiel
   }
 
   return (
-    <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-gray-700 uppercase tracking-wide">
-        {campo.etiqueta}
-        {campo.requerido && <span className="text-red-500 ml-0.5">*</span>}
-      </label>
+    <>
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wide">
+          {campo.etiqueta}
+          {campo.requerido && <span className="text-red-500 ml-0.5">*</span>}
+        </label>
 
-      {campo.tipo === 'text' && (
-        <Input
-          type="text"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={campo.placeholder || `Ingresa tu ${campo.etiqueta.toLowerCase()}`}
-          required={campo.requerido}
-        />
-      )}
-
-      {campo.tipo === 'email' && (
-        <Input
-          type="email"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={campo.placeholder || 'tu@email.com'}
-          required={campo.requerido}
-        />
-      )}
-
-      {campo.tipo === 'tel' && (
-        <Input
-          type="tel"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={campo.placeholder || '+51 999 999 999'}
-          required={campo.requerido}
-        />
-      )}
-
-      {campo.tipo === 'number' && (
-        <Input
-          type="number"
-          value={value || ''}
-          onChange={(e) => {
-            const newValue = e.target.value;
-            // Validar que sea un número positivo y no contenga letras
-            if (newValue === '' || (!isNaN(Number(newValue)) && Number(newValue) >= 0)) {
-              onChange(newValue);
-            }
-          }}
-          onKeyDown={(e) => {
-            // Prevenir la letra 'e' en cualquier posición
-            if (e.key === 'e' || e.key === 'E') {
-              e.preventDefault();
-              return;
-            }
-            // Prevenir el signo '-' excepto al inicio cuando está vacío
-            if (e.key === '-' && (e.currentTarget.value !== '' || e.currentTarget.selectionStart !== 0)) {
-              e.preventDefault();
-              return;
-            }
-            // Prevenir cualquier letra que no sea número
-            if (e.key.length === 1 && !/[0-9.]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-              e.preventDefault();
-              return;
-            }
-          }}
-          placeholder={campo.placeholder}
-          required={campo.requerido}
-          min={campo.validaciones?.min}
-          max={campo.validaciones?.max}
-        />
-      )}
-
-      {campo.tipo === 'textarea' && (
-        <textarea
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={campo.placeholder || `Escribe aquí...`}
-          required={campo.requerido}
-          rows={4}
-          className={textareaClasses}
-        />
-      )}
-
-      {campo.tipo === 'select' && selectOptions && (
-        <Select
-          value={value || null}
-          onChange={(newValue: string | null) => onChange(newValue || '')}
-          options={selectOptions}
-          placeholder="Selecciona una opción"
-        />
-      )}
-
-      {campo.tipo === 'file' && (
-        <div className="space-y-3">
-          <FileUploadComponent
-            campo={campo}
-            value={value}
-            onChange={onChange}
+        {campo.tipo === 'text' && (
+          <Input
+            type="text"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={campo.placeholder || `Ingresa tu ${campo.etiqueta.toLowerCase()}`}
+            required={campo.requerido}
+            title={campo.nombre === 'dni' && dniExists ? '⚠️ Ya existe un candidato con este DNI. Completa el formulario para confirmar tu identidad.' : undefined}
           />
+        )}
+
+        {campo.tipo === 'email' && (
+          <Input
+            type="email"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={campo.placeholder || 'tu@email.com'}
+            required={campo.requerido}
+          />
+        )}
+
+        {campo.tipo === 'tel' && (
+          <Input
+            type="tel"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={campo.placeholder || '+51 999 999 999'}
+            required={campo.requerido}
+          />
+        )}
+
+        {campo.tipo === 'number' && (
+          <Input
+            type="number"
+            value={value || ''}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              // Validar que sea un número positivo y no contenga letras
+              if (newValue === '' || (!isNaN(Number(newValue)) && Number(newValue) >= 0)) {
+                onChange(newValue);
+              }
+            }}
+            onKeyDown={(e) => {
+              // Prevenir la letra 'e' en cualquier posición
+              if (e.key === 'e' || e.key === 'E') {
+                e.preventDefault();
+                return;
+              }
+              // Prevenir el signo '-' excepto al inicio cuando está vacío
+              if (e.key === '-' && (e.currentTarget.value !== '' || e.currentTarget.selectionStart !== 0)) {
+                e.preventDefault();
+                return;
+              }
+              // Prevenir cualquier letra que no sea número
+              if (e.key.length === 1 && !/[0-9.]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+                e.preventDefault();
+                return;
+              }
+            }}
+            placeholder={campo.placeholder}
+            required={campo.requerido}
+            min={campo.validaciones?.min}
+            max={campo.validaciones?.max}
+          />
+        )}
+
+        {campo.tipo === 'textarea' && (
+          <textarea
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={campo.placeholder || `Escribe aquí...`}
+            required={campo.requerido}
+            rows={4}
+            className={textareaClasses}
+          />
+        )}
+
+        {campo.tipo === 'select' && selectOptions && (
+          <Select
+            value={value || null}
+            onChange={(newValue: string | null) => onChange(newValue || '')}
+            options={selectOptions}
+            placeholder="Selecciona una opción"
+          />
+        )}
+
+        {campo.tipo === 'file' && (
+          <div className="space-y-3">
+            <FileUploadComponent
+              campo={campo}
+              value={value}
+              onChange={onChange}
+            />
+          </div>
+        )}
+
+        {campo.tipo === 'url' && (
+          <Input
+            type="url"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={campo.placeholder || 'https://ejemplo.com'}
+            required={campo.requerido}
+            pattern={campo.validaciones?.patron}
+          />
+        )}
+      </div>
+ 
+
+      {campo.nombre === 'dni' && dniExists && !loadingDniCheck && (
+        <div className={`p-0.5 flex items-center justify-center rounded  ${dniConfirmed ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+          <p className={`text-[11px] font-medium ${dniConfirmed ? 'text-green-600' : 'text-blue-600'}`}>
+            {dniConfirmed
+              ? '✅ ¡Identidad confirmada! Puedes enviar tu postulación.'
+              : '👋 ¡Hola! Ya tienes un registro en nuestro sistema. Completa tus datos para confirmar tu identidad y postular.'
+            }
+          </p>
         </div>
       )}
-
-      {campo.tipo === 'url' && (
-        <Input
-          type="url"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={campo.placeholder || 'https://ejemplo.com'}
-          required={campo.requerido}
-          pattern={campo.validaciones?.patron}
-        />
-      )}
-    </div>
+    </>
   );
 }
 

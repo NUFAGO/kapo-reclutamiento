@@ -373,7 +373,7 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista }: EntrevistaLlama
                 </View>
 
                 {/* --- SECCION REFERENCIAS --- */}
-                <Text style={styles.sectionHeader}>RESULTADO DE REFERENCIAS LABORALES (SOLO POSTULANTES DE ENTREVISTA FINAL)</Text>
+                <Text style={styles.sectionHeader}>RESULTADO DE REFERENCIAS LABORALES</Text>
                 <View style={styles.table}>
                     <View style={[styles.tableRow, { backgroundColor: '#e0e0e0' }]}>
                         <View style={[styles.cell, { width: '30%' }]}>

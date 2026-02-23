@@ -25,6 +25,8 @@ export interface Convocatoria {
   cargoNombre?: string
   obraNombre?: string
   empresaNombre?: string
+  categoria_nombre?: string
+  especialidad_nombre?: string
   vacantes: number
   prioridad: string
   estadoConvocatoria: string
@@ -104,7 +106,8 @@ export interface KanbanColumnProps {
 
 export interface KanbanBoardProps {
   convocatoriaId?: string
-  onAplicacionClick?: (aplicacion: AplicacionCandidato) => void
+  onAplicacionClick?: (aplicacion: AplicacionCandidato, onMove?: (aplicacionId: string, newEstado: EstadoKanban) => void) => void
+  viewMode?: 'main' | 'archived'
 }
 
 // Filtros para el kanban

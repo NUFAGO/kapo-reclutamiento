@@ -36,7 +36,6 @@ export interface DebidaDiligencia {
 export interface ControlEvaluacion {
   criterio: string
   responsable: string
-  nombre_responsable: string
   fecha_limite: string
 }
 
@@ -70,7 +69,6 @@ export interface ActualizarDebidaDiligenciaInput {
 export interface CrearControlEvaluacionInput {
   criterio: string
   responsable: string
-  nombre_responsable: string
   fecha_limite: string
 }
 

@@ -25,82 +25,98 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
     backgroundColor: '#ffffff',
-    padding: 40, // Márgenes más amplios para documento formal
+    padding: 30, // Márgenes más amplios para documento formal
   },
   header: {
-    marginBottom: 15,
+    marginBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    paddingBottom: 8,
+    paddingBottom: 6,
   },
   title: {
-    fontSize: 14, // text-sm ≈ 14px
+    fontSize: 12, // Reduced from 14
     fontWeight: 'semibold',
     color: '#1f2937',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 12, // text-xs ≈ 12px
+    fontSize: 10, // Reduced from 12
     color: '#6b7280',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   status: {
-    fontSize: 10,
+    fontSize: 9, // Reduced from 10
     color: '#065f46',
     backgroundColor: '#d1fae5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 3,
     alignSelf: 'flex-start',
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#f9fafb',
-    borderRadius: 6,
-    padding: 12,
-    marginHorizontal: 3,
+    borderRadius: 5,
+    padding: 10,
+    marginHorizontal: 2,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   statValue: {
-    fontSize: 12, // text-xs ≈ 12px
+    fontSize: 10, // Reduced from 12
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   statLabel: {
-    fontSize: 12, // text-xs ≈ 12px
+    fontSize: 10, // Reduced from 12
     color: '#6b7280',
     fontWeight: 'medium',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 12, // text-sm ≈ 14px pero reducido para PDF
+    fontSize: 10, // Reduced from 12
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 8,
+    marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   infoGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   infoItem: {
-    width: '50%',
+    width: '48%',
     marginBottom: 8,
   },
+  infoCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 5,
+    padding: 8,
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    width: '32%',
+    marginBottom: 8,
+  },
+  infoField: {
+    backgroundColor: '#f9fafb',
+    padding: 4,
+    borderRadius: 3,
+    marginBottom: 2,
+  },
   infoLabel: {
-    fontSize: 12, // text-xs font-semibold ≈ 12px
+    fontSize: 10, // Reduced from 12
     color: '#6b7280',
     fontWeight: 'semibold',
     textTransform: 'uppercase',
@@ -108,25 +124,37 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   infoValue: {
-    fontSize: 12, // text-xs font-medium ≈ 12px
+    fontSize: 10, // Reduced from 12
     color: '#1f2937',
     fontWeight: 'medium',
   },
+  infoValueContainer: {
+    backgroundColor: '#f9fafb',
+    padding: 4,
+    borderRadius: 3,
+    marginBottom: 2,
+  },
   detailsSection: {
-    marginTop: 8,
+    marginTop: 6,
   },
   detailsTitle: {
-    fontSize: 12,
+    fontSize: 10, // Reduced from 12
     fontWeight: 'semibold',
     color: '#1f2937',
-    marginBottom: 6,
+    marginBottom: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   detailsContent: {
-    fontSize: 12,
+    fontSize: 10, // Reduced from 12
     color: '#374151',
-    lineHeight: 1.4,
+    lineHeight: 1.3,
+  },
+  detailsContentContainer: {
+    backgroundColor: '#f9fafb',
+    padding: 4,
+    borderRadius: 3,
+    marginBottom: 2,
   },
 });
 
@@ -178,38 +206,73 @@ const ConvocatoriaPDFDocument = ({ convocatoria }: { convocatoria: any }) => {
           </View>
         </View>
 
-        {/* Información del Cargo y Ubicación */}
+        {/* Información Principal */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Información del Cargo y Ubicación</Text>
-          <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
+          <Text style={styles.sectionTitle}>Información Principal</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <View style={{ width: '48%', marginBottom: 8 }}>
               <Text style={styles.infoLabel}>Cargo</Text>
-              <Text style={styles.infoValue}>{convocatoria.cargo_nombre}</Text>
+              <View style={styles.infoField}>
+                <Text style={styles.infoValue}>{convocatoria.cargo_nombre || "-"}</Text>
+              </View>
             </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Categoría</Text>
-              <Text style={styles.infoValue}>{convocatoria.categoria_nombre}</Text>
+            <View style={{ width: '48%', marginBottom: 8 }}>
+              <Text style={styles.infoLabel}>Categoría | Especialidad</Text>
+              <View style={styles.infoField}>
+                <Text style={styles.infoValue}>
+                  {convocatoria.categoria_nombre || "-"} | {convocatoria.especialidad_nombre || "-"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Especialidad</Text>
-              <Text style={styles.infoValue}>{convocatoria.especialidad_nombre}</Text>
+            <View style={{ width: '48%', marginBottom: 8 }}>
+              <Text style={styles.infoLabel}>Ubicación</Text>
+              <View style={styles.infoField}>
+                <Text style={styles.infoValue}>
+                  {convocatoria.empresa_nombre || "-"} | {convocatoria.obra_nombre || "-"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoItem}>
+            <View style={{ width: '48%', marginBottom: 8 }}>
+              <Text style={styles.infoLabel}>Vacantes y Prioridad</Text>
+              <View style={styles.infoField}>
+                <Text style={styles.infoValue}>
+                  {convocatoria.vacantes || 0} vacantes | Nivel {convocatoria.prioridad || "-"}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Datos de la Convocatoria */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Datos de la Convocatoria</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <View style={{ width: '23%', marginBottom: 8 }}>
+              <Text style={styles.infoLabel}>Código</Text>
+              <View style={styles.infoField}>
+                <Text style={styles.infoValue}>{convocatoria.codigo_convocatoria || "-"}</Text>
+              </View>
+            </View>
+            <View style={{ width: '23%', marginBottom: 8 }}>
               <Text style={styles.infoLabel}>Tipo</Text>
-              <Text style={styles.infoValue}>{convocatoria.tipo_requerimiento?.replace('_', ' ')}</Text>
+              <View style={styles.infoField}>
+                <Text style={styles.infoValue}>{convocatoria.tipo_requerimiento || "-"}</Text>
+              </View>
             </View>
-            {convocatoria.empresa_nombre && (
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Empresa</Text>
-                <Text style={styles.infoValue}>{convocatoria.empresa_nombre}</Text>
+            <View style={{ width: '23%', marginBottom: 8 }}>
+              <Text style={styles.infoLabel}>Estado</Text>
+              <View style={styles.infoField}>
+                <Text style={styles.infoValue}>{convocatoria.estado_convocatoria?.replace('_', ' ') || "-"}</Text>
               </View>
-            )}
-            {convocatoria.obra_nombre && (
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Obra/Proyecto</Text>
-                <Text style={styles.infoValue}>{convocatoria.obra_nombre}</Text>
+            </View>
+            <View style={{ width: '23%', marginBottom: 8 }}>
+              <Text style={styles.infoLabel}>Publicado</Text>
+              <View style={styles.infoField}>
+                <Text style={styles.infoValue}>
+                  {convocatoria.fecha_creacion ? formatShortDate(convocatoria.fecha_creacion) : "-"}
+                </Text>
               </View>
-            )}
+            </View>
           </View>
         </View>
 
@@ -217,133 +280,151 @@ const ConvocatoriaPDFDocument = ({ convocatoria }: { convocatoria: any }) => {
         {detalle && Object.keys(detalle).length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Detalles de la Solicitud</Text>
-
-            <View style={{ borderLeftWidth: 1, borderLeftColor: '#d1d5db', paddingLeft: 12 }}>
-              {/* Información básica */}
-              <View style={styles.infoGrid}>
-                {detalle.fecha_contratacion_deseada && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Fecha deseada</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+              {detalle.fecha_contratacion_deseada && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Fecha Deseada</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>
                       {formatShortDate(detalle.fecha_contratacion_deseada)}
                     </Text>
                   </View>
-                )}
-                {detalle.area_solicitante_nombre && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Área solicitante</Text>
+                </View>
+              )}
+
+              {detalle.area_solicitante_nombre && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Área Solicitante</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>{detalle.area_solicitante_nombre}</Text>
                   </View>
-                )}
-                {detalle.jefe_inmediato_nombre && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Jefe inmediato</Text>
+                </View>
+              )}
+
+              {detalle.jefe_inmediato_nombre && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Jefe Inmediato</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>{detalle.jefe_inmediato_nombre}</Text>
                   </View>
-                )}
-                {detalle.encargado_induccion_nombre && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Encargado inducción</Text>
+                </View>
+              )}
+
+              {detalle.encargado_induccion_nombre && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Encargado Inducción</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>{detalle.encargado_induccion_nombre}</Text>
                   </View>
-                )}
-                {detalle.tipo_para_cubrir && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Tipo</Text>
+                </View>
+              )}
+
+              {detalle.tipo_para_cubrir && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Tipo para Cubrir</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>{detalle.tipo_para_cubrir.replace('_', ' ')}</Text>
                   </View>
-                )}
-                {detalle.horario_tiempo && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Horario</Text>
+                </View>
+              )}
+
+              {detalle.horario_tiempo && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Horario</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>{detalle.horario_tiempo}</Text>
                   </View>
-                )}
-                {detalle.equipo_asignado && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Equipo</Text>
+                </View>
+              )}
+
+              {detalle.equipo_asignado && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Equipo Asignado</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>{detalle.equipo_asignado}</Text>
                   </View>
-                )}
-                {detalle.lugar_trabajo && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Lugar trabajo</Text>
+                </View>
+              )}
+
+              {detalle.lugar_trabajo && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Lugar de Trabajo</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>{detalle.lugar_trabajo}</Text>
                   </View>
-                )}
-                {typeof detalle.disponibilidad_viajar === 'boolean' && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Disponibilidad viajes</Text>
+                </View>
+              )}
+
+              {typeof detalle.disponibilidad_viajar === 'boolean' && (
+                <View style={{ width: '25%', marginBottom: 16 }}>
+                  <Text style={styles.infoLabel}>Disponibilidad para Viajar</Text>
+                  <View style={styles.infoField}>
                     <Text style={styles.infoValue}>
                       {detalle.disponibilidad_viajar ? 'Sí' : 'No'}
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Formación Académica */}
-              {detalle.formacion_academica && (
-                <View style={{ marginTop: 12 }}>
-                  <View style={{ borderLeftWidth: 1, borderLeftColor: '#d1d5db', paddingLeft: 8 }}>
-                    <Text style={styles.detailsTitle}>Formación Requerida</Text>
-                    <Text style={styles.detailsContent}>
-                      {detalle.formacion_academica.universitario?.length > 0 &&
-                        `Universitario: ${detalle.formacion_academica.universitario.join(', ')}\n`}
-                      {detalle.formacion_academica.tecnico?.length > 0 &&
-                        `Técnico: ${detalle.formacion_academica.tecnico.join(', ')}`}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Experiencia */}
-              {detalle.experiencia_laboral_requerida && (
-                <View style={{ marginTop: 12 }}>
-                  <View style={{ borderLeftWidth: 1, borderLeftColor: '#d1d5db', paddingLeft: 8 }}>
-                    <Text style={styles.detailsTitle}>Experiencia Requerida</Text>
-                    <Text style={styles.detailsContent}>
-                      {detalle.experiencia_laboral_requerida}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Motivo */}
-              {detalle.motivo_solicitud && (
-                <View style={{ marginTop: 12 }}>
-                  <View style={{ borderLeftWidth: 1, borderLeftColor: '#d1d5db', paddingLeft: 8 }}>
-                    <Text style={styles.detailsTitle}>Motivo de la Solicitud</Text>
-                    <Text style={styles.detailsContent}>
-                      {detalle.motivo_solicitud}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Requisitos Mínimos */}
-              {detalle.requisitos_minimos && (
-                <View style={{ marginTop: 12 }}>
-                  <View style={{ borderLeftWidth: 1, borderLeftColor: '#d1d5db', paddingLeft: 8 }}>
-                    <Text style={styles.detailsTitle}>Requisitos Mínimos</Text>
-                    <Text style={styles.detailsContent}>
-                      {detalle.requisitos_minimos}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Funciones Principales */}
-              {detalle.funciones_principales && (
-                <View style={{ marginTop: 12 }}>
-                  <View style={{ borderLeftWidth: 1, borderLeftColor: '#d1d5db', paddingLeft: 8 }}>
-                    <Text style={styles.detailsTitle}>Funciones Principales</Text>
-                    <Text style={styles.detailsContent}>
-                      {detalle.funciones_principales}
                     </Text>
                   </View>
                 </View>
               )}
             </View>
+
+            {/* Formación Académica */}
+            {detalle.formacion_academica && (
+              <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#d1d5db', paddingTop: 8 }}>
+                <Text style={styles.detailsTitle}>Formación Requerida</Text>
+                <View style={styles.detailsContentContainer}>
+                  {detalle.formacion_academica.universitario?.length > 0 && (
+                    <Text style={styles.detailsContent}>
+                      Universitario: {detalle.formacion_academica.universitario.join(', ')}
+                    </Text>
+                  )}
+                  {detalle.formacion_academica.tecnico?.length > 0 && (
+                    <Text style={styles.detailsContent}>
+                      Técnico: {detalle.formacion_academica.tecnico.join(', ')}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* Experiencia Laboral Requerida */}
+            {detalle.experiencia_laboral_requerida && (
+              <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#d1d5db', paddingTop: 8 }}>
+                <Text style={styles.detailsTitle}>Experiencia Requerida</Text>
+                <View style={styles.detailsContentContainer}><Text style={styles.detailsContent}>
+                  {detalle.experiencia_laboral_requerida}
+                </Text></View>
+              </View>
+            )}
+
+            {/* Motivo de la Solicitud */}
+            {detalle.motivo_solicitud && (
+              <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#d1d5db', paddingTop: 8 }}>
+                <Text style={styles.detailsTitle}>Motivo de la Solicitud</Text>
+                <View style={styles.detailsContentContainer}><Text style={styles.detailsContent}>
+                  {detalle.motivo_solicitud}
+                </Text></View>
+              </View>
+            )}
+
+            {/* Requisitos Mínimos */}
+            {detalle.requisitos_minimos && (
+              <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#d1d5db', paddingTop: 8 }}>
+                <Text style={styles.detailsTitle}>Requisitos Mínimos</Text>
+                <View style={styles.detailsContentContainer}><Text style={styles.detailsContent}>
+                  {detalle.requisitos_minimos}
+                </Text></View>
+              </View>
+            )}
+
+            {/* Funciones Principales */}
+            {detalle.funciones_principales && (
+              <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#d1d5db', paddingTop: 8 }}>
+                <Text style={styles.detailsTitle}>Funciones Principales</Text>
+                <View style={styles.detailsContentContainer}><Text style={styles.detailsContent}>
+                  {detalle.funciones_principales}
+                </Text></View>
+              </View>
+            )}
           </View>
         )}
       </Page>
@@ -354,38 +435,48 @@ const ConvocatoriaPDFDocument = ({ convocatoria }: { convocatoria: any }) => {
 export default function ConvocatoriaPdf({ isOpen, onClose, convocatoria }: ConvocatoriaPdfProps) {
   if (!convocatoria) return null;
 
+  const getEstadoColor = (estado: string) => {
+    const colors = {
+      'ACTIVA': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+      'EN_PROCESO': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+      'FINALIZADA': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300',
+      'CANCELADA': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    };
+    return colors[estado as keyof typeof colors] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <FileText className="h-5 w-5 text-text-secondary" />
-              <span className="text-sm font-semibold text-text-primary">
-                {convocatoria.cargo_nombre || 'Convocatoria'} - PDF
+        <div className="flex items-center gap-3">
+          <FileText className="w-5 h-5 text-primary" />
+          <div>
+            <span className="text-sm font-semibold text-text-primary">
+              {convocatoria.cargo_nombre || 'Convocatoria'} - PDF
+            </span>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-muted-foreground">
+                Código: {convocatoria.codigo_convocatoria}
               </span>
-              <span className="px-2 py-0.5 rounded text-xs font-semibold border bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900">
+              <span className={`text-xs px-2 py-1 rounded ${getEstadoColor(convocatoria.estado_convocatoria)}`}>
                 {convocatoria.estado_convocatoria?.replace('_', ' ')}
               </span>
             </div>
-            <p className="text-xs text-text-secondary font-normal">
-              Código: {convocatoria.codigo_convocatoria}
-            </p>
           </div>
         </div>
       }
       size="lg"
       footer={
-        <div className="flex justify-end gap-3">
-          <Button
-            variant="custom"
-            color="gray"
+        <div className="flex justify-end">
+          <button
+            type="button"
             onClick={onClose}
+            className="px-4 py-2 text-xs font-medium text-muted-foreground bg-gray-100/60 dark:bg-[black]/10 hover:bg-accent border border-border rounded transition-colors"
           >
             Cerrar
-          </Button>
+          </button>
           <PDFDownloadLink
             document={<ConvocatoriaPDFDocument convocatoria={convocatoria} />}
             fileName={`${convocatoria.cargo_nombre || 'Convocatoria'}.pdf`}

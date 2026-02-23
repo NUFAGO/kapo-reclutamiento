@@ -93,7 +93,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-muted-foreground bg-muted hover:bg-accent border border-border rounded transition-colors"
+            className="px-4 py-2 text-xs font-medium text-muted-foreground bg-gray-100/60 dark:bg-[black]/10 hover:bg-accent border border-border rounded transition-colors"
           >
             Cerrar
           </button>
@@ -147,13 +147,13 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
               <div>
                 <label className="block text-xs font-semibold mb-1">Código</label>
-                <div className="text-xs font-medium text-primary p-1 bg-muted rounded">
+                <div className="text-xs font-medium text-primary p-1 bg-gray-100/60 dark:bg-[black]/10 rounded">
                   {convocatoria.codigo_convocatoria || "-"}
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1">Tipo</label>
-                <div className="text-xs font-medium text-primary p-1 bg-gray-200 rounded">
+                <div className="text-xs font-medium text-primary p-1 bg-gray-100/60 dark:bg-[black]/10 rounded">
                   {convocatoria.tipo_requerimiento || "-"}
                 </div>
               </div>
@@ -165,7 +165,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1">Publicado</label>
-                <div className="text-xs font-medium text-text-secondary p-1 bg-[var(--muted)] rounded">
+                <div className="text-xs font-medium text-text-secondary p-1 bg-gray-100/60 dark:bg-[black]/10 rounded">
                   {convocatoria.fecha_creacion ? formatShortDate(convocatoria.fecha_creacion) : "-"}
                 </div>
               </div>
@@ -182,7 +182,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {detalle.fecha_contratacion_deseada && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Fecha Deseada</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded">
                       {formatShortDate(detalle.fecha_contratacion_deseada)}
                     </div>
                   </div>
@@ -191,7 +191,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {detalle.area_solicitante_nombre && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Área Solicitante</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded">
                       {detalle.area_solicitante_nombre}
                     </div>
                   </div>
@@ -200,7 +200,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {detalle.jefe_inmediato_nombre && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Jefe Inmediato</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded">
                       {detalle.jefe_inmediato_nombre}
                     </div>
                   </div>
@@ -209,7 +209,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {detalle.encargado_induccion_nombre && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Encargado Inducción</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded">
                       {detalle.encargado_induccion_nombre}
                     </div>
                   </div>
@@ -218,7 +218,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {detalle.tipo_para_cubrir && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Tipo para Cubrir</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded capitalize">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded capitalize">
                       {detalle.tipo_para_cubrir.replace('_', ' ')}
                     </div>
                   </div>
@@ -227,7 +227,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {detalle.horario_tiempo && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Horario</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded capitalize">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded capitalize">
                       {detalle.horario_tiempo}
                     </div>
                   </div>
@@ -236,7 +236,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {detalle.equipo_asignado && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Equipo Asignado</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded capitalize">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded capitalize">
                       {detalle.equipo_asignado}
                     </div>
                   </div>
@@ -245,7 +245,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {detalle.lugar_trabajo && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Lugar de Trabajo</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded capitalize">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded capitalize">
                       {detalle.lugar_trabajo}
                     </div>
                   </div>
@@ -254,7 +254,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                 {typeof detalle.disponibilidad_viajar === 'boolean' && (
                   <div>
                     <label className="block text-xs font-semibold mb-1">Disponibilidad para Viajar</label>
-                    <div className="text-xs text-muted-foreground p-1 bg-muted rounded">
+                    <div className="text-xs text-muted-foreground p-1 bg-gray-100/60 dark:bg-[black]/10 rounded">
                       {detalle.disponibilidad_viajar ? 'Sí' : 'No'}
                     </div>
                   </div>
@@ -270,12 +270,12 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                   </div>
                   <div className="space-y-1">
                     {detalle.formacion_academica.universitario?.length > 0 && (
-                      <div className="text-xs text-muted-foreground p-2 bg-muted rounded">
+                      <div className="text-xs text-muted-foreground p-2 bg-gray-100/60 dark:bg-[black]/10 rounded">
                         <span className="font-medium">Universitario:</span> {detalle.formacion_academica.universitario.join(', ')}
                       </div>
                     )}
                     {detalle.formacion_academica.tecnico?.length > 0 && (
-                      <div className="text-xs text-muted-foreground p-2 bg-muted rounded">
+                      <div className="text-xs text-muted-foreground p-2 bg-gray-100/60 dark:bg-[black]/10 rounded">
                         <span className="font-medium">Técnico:</span> {detalle.formacion_academica.tecnico.join(', ')}
                       </div>
                     )}
@@ -290,7 +290,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                     <Briefcase className="w-4 h-4 text-primary" />
                     <label className="text-xs font-semibold">Experiencia Requerida</label>
                   </div>
-                  <div className="text-xs text-muted-foreground p-2 bg-muted rounded whitespace-pre-line">
+                  <div className="text-xs text-muted-foreground p-2 bg-gray-100/60 dark:bg-[black]/10 rounded whitespace-pre-line">
                     {detalle.experiencia_laboral_requerida}
                   </div>
                 </div>
@@ -302,7 +302,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                     <FileText className="w-4 h-4 text-primary" />
                     <label className="text-xs font-semibold">Motivo de la Solicitud</label>
                   </div>
-                  <div className="text-xs text-muted-foreground p-2 bg-muted rounded whitespace-pre-line">
+                  <div className="text-xs text-muted-foreground p-2 bg-gray-100/60 dark:bg-[black]/10 rounded whitespace-pre-line">
                     {detalle.motivo_solicitud}
                   </div>
                 </div>
@@ -314,7 +314,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                     <ListChecks className="w-4 h-4 text-primary" />
                     <label className="text-xs font-semibold">Requisitos Mínimos</label>
                   </div>
-                  <div className="text-xs text-muted-foreground p-2 bg-muted rounded whitespace-pre-line">
+                  <div className="text-xs text-muted-foreground p-2 bg-gray-100/60 dark:bg-[black]/10 rounded whitespace-pre-line">
                     {detalle.requisitos_minimos}
                   </div>
                 </div>
@@ -326,7 +326,7 @@ export default function ConvocatoriaView({ isOpen, onClose, convocatoria }: Conv
                     <Target className="w-4 h-4 text-primary" />
                     <label className="text-xs font-semibold">Funciones Principales</label>
                   </div>
-                  <div className="text-xs text-muted-foreground p-2 bg-muted rounded whitespace-pre-line">
+                  <div className="text-xs text-muted-foreground p-2 bg-gray-100/60 dark:bg-[black]/10 rounded whitespace-pre-line">
                     {detalle.funciones_principales}
                   </div>
                 </div>

@@ -105,7 +105,7 @@ export function KanbanColumn({
         {/* Cards de aplicaciones */}
         {aplicacionesOrdenadas.map((aplicacion) => (
           <KanbanCard
-            key={aplicacion.id}
+            key={`${estado}-${aplicacion.id}`}
             aplicacion={aplicacion}
             onClick={() => onAplicacionClick?.(aplicacion)}
           />

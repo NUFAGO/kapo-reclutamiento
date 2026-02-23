@@ -18,6 +18,8 @@ const APLICACION_FIELDS = `
     cargoNombre
     obraNombre
     empresaNombre
+    categoria_nombre
+    especialidad_nombre
   }
   aniosExperienciaPuesto
   aniosExperienciaGeneral

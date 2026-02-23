@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { UserCheck, Save, Edit, Plus, Phone, Building, FileText, MessageSquare, X, ChevronRight } from 'lucide-react'
@@ -16,6 +17,7 @@ import toast from 'react-hot-toast'
 
 interface ReferenciaTabProps {
     aplicacion: AplicacionCandidato
+    onValidationChange?: (isValid: boolean) => void
 }
 
 interface FormData {
@@ -28,11 +30,18 @@ interface FormData {
     archivosurl: string[]
 }
 
-export function ReferenciaTab({ aplicacion }: ReferenciaTabProps) {
+export function ReferenciaTab({ aplicacion, onValidationChange }: ReferenciaTabProps) {
     const { data: referencias, isLoading: loadingReferencias } = useReferenciasPorAplicacion(aplicacion.id)
     const { mutateAsync: crearReferencia, isPending: loadingCrear } = useCrearReferencia()
     const { mutateAsync: actualizarReferencia, isPending: loadingActualizar } = useActualizarReferencia()
     const { uploadMultipleFiles, deleteFile, isUploading, error: uploadError, clearError } = useFileUpload()
+
+    // Report validation when data is loaded
+    React.useEffect(() => {
+        if (!loadingReferencias) {
+            onValidationChange?.(!!(referencias && referencias.length > 0))
+        }
+    }, [referencias, loadingReferencias])
 
     const [viewMode, setViewMode] = useState<'list' | 'form'>('list')
     const [editingReferencia, setEditingReferencia] = useState<Referencia | null>(null)

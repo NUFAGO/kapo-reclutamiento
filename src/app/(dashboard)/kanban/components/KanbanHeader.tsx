@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useConvocatorias } from '@/hooks/useConvocatorias'
 import { PRIORIDAD_COLORES } from '../lib/kanban.constants'
 import { Button } from '@/components/ui/button'
 import { SelectSearch } from '@/components/ui/select-search'
 import { Badge } from '@/components/ui/badge'
-import { Filter, AlertTriangle, Users, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { Filter, AlertTriangle, Users, CheckCircle, Clock, XCircle, Archive, Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface KanbanHeaderProps {
@@ -20,6 +20,8 @@ interface KanbanHeaderProps {
     finalizadas: number
     descartadas: number
   }
+  viewMode?: 'main' | 'archived'
+  onViewModeChange?: (mode: 'main' | 'archived') => void
 }
 
 export function KanbanHeader({
@@ -28,8 +30,17 @@ export function KanbanHeader({
   onToggleDuplicados,
   mostrarSoloDuplicados = false,
   estadisticas,
+  viewMode = 'main',
+  onViewModeChange,
 }: KanbanHeaderProps) {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [animating, setAnimating] = useState(false)
+
+  useEffect(() => {
+    setAnimating(true)
+    const timer = setTimeout(() => setAnimating(false), 300)
+    return () => clearTimeout(timer)
+  }, [viewMode])
 
   // Obtener convocatorias del backend
   const { convocatorias, loading } = useConvocatorias({ limit: 100 })
@@ -96,15 +107,28 @@ export function KanbanHeader({
               isLoading={loading}
               showSearchIcon={true}
               options={[
-              
                 ...convocatorias.map((convocatoria) => ({
                   value: convocatoria.id,
-                  label: `${convocatoria.cargo_nombre || 'Sin cargo'} - ${convocatoria.prioridad}`
+                  label: `${convocatoria.cargo_nombre || 'Sin cargo'} ${convocatoria.especialidad_nombre ? `(${convocatoria.especialidad_nombre})` : ''} - ${convocatoria.prioridad}`.trim()
                 }))
               ]}
             />
           </div>
 
+          {/* Botón de alternancia de vista */}
+          <Button
+            variant="custom"
+            color={viewMode === 'main' ? "orange" : "blue"}
+            size="xs"
+            className={animating ? 'opacity-50' : ''}
+            onClick={() => onViewModeChange?.(viewMode === 'main' ? 'archived' : 'main')}
+          >
+            <div className="relative w-4 h-4 mr-1">
+              <Archive className={`w-4 h-4 absolute inset-0 transition-all duration-300 ${viewMode === 'main' ? 'opacity-100 rotate-0' : 'opacity-0 rotate-180'}`} />
+              <Inbox className={`w-4 h-4 absolute inset-0 transition-all duration-300 ${viewMode === 'archived' ? 'opacity-100 rotate-0' : 'opacity-0 rotate-180'}`} />
+            </div>
+            {viewMode === 'main' ? 'Archivados' : 'Vista Principal'}
+          </Button>
           
         </div>
       </div>

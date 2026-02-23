@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useState, useEffect } from 'react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { Calendar, Mail, Clock, Save, Edit } from 'lucide-react'
@@ -11,6 +12,9 @@ import {
     useActualizarEntrevistaRegular
 } from '@/hooks/useEntrevistasRegulares'
 import { useAuth, useUsuarios, Usuario } from '@/hooks'
+import { graphqlRequest } from '@/lib/graphql-client'
+import { LIST_USUARIOS_PAGINATED_QUERY } from '@/graphql/queries'
+import type { ListUsuariosPaginatedResponse } from '@/hooks/useUsuarios'
 import { SelectSearch } from '@/components/ui/select-search'
 
 interface SegundoEntrevistaTabProps {
@@ -18,6 +22,7 @@ interface SegundoEntrevistaTabProps {
     usuariosOptions?: Usuario[]
     loadingUsuarios?: boolean
     loadingEntrevista?: boolean
+    onValidationChange?: (isValid: boolean) => void
 }
 
 interface FormData {
@@ -27,16 +32,25 @@ interface FormData {
     entrevistadorId: string
 }
 
-export function SegundoEntrevistaTab({ aplicacion }: SegundoEntrevistaTabProps) {
+export function SegundoEntrevistaTab({ aplicacion, onValidationChange }: SegundoEntrevistaTabProps) {
     const { user } = useAuth()
 
     // Cargar usuarios inicialmente para el SelectSearch
-    const { usuarios: usuariosOptions, loading: loadingUsuarios } = useUsuarios({ pagination: { page: 1, limit: 10000 } })
+    const { usuarios: usuariosOptions, loading: loadingUsuarios } = useUsuarios({ 
+        pagination: { page: 1, limit: 50 }
+    })
 
     // Hook para manejar la entrevista
     const { entrevista, loading: loadingEntrevista } = useEntrevistaRegularPorAplicacion(aplicacion.id, 'SEGUNDA')
     const { crearEntrevista, loading: loadingCrear } = useCrearEntrevistaRegular()
     const { actualizarEntrevista, loading: loadingActualizar } = useActualizarEntrevistaRegular()
+
+    // Report validation when data is loaded
+    React.useEffect(() => {
+        if (!loadingEntrevista) {
+            onValidationChange?.(!!entrevista)
+        }
+    }, [entrevista, loadingEntrevista])
 
     const [isEditMode, setIsEditMode] = useState(false)
     const [hasChanges, setHasChanges] = useState(false)
@@ -198,7 +212,19 @@ export function SegundoEntrevistaTab({ aplicacion }: SegundoEntrevistaTabProps) 
                         className="h-8 text-xs"
                         disabled={!isEditMode && !!entrevista}
                         showSearchIcon={true}
-                        options={usuariosOptions.map(usuario => ({
+                        onSearch={async (searchTerm) => {
+                            const response = await graphqlRequest<{
+                                listUsuariosPaginated: ListUsuariosPaginatedResponse
+                            }>(LIST_USUARIOS_PAGINATED_QUERY, {
+                                pagination: { page: 1, limit: 50 },
+                                filters: { nombres: searchTerm }
+                            })
+                            return response.listUsuariosPaginated.data.map((usuario: Usuario) => ({
+                                value: `${usuario.nombres} ${usuario.apellidos}`.trim(),
+                                label: `${usuario.nombres} ${usuario.apellidos}`.trim()
+                            }))
+                        }}
+                        options={usuariosOptions.map((usuario: Usuario) => ({
                             value: `${usuario.nombres} ${usuario.apellidos}`.trim(),
                             label: `${usuario.nombres} ${usuario.apellidos}`.trim()
                         }))}

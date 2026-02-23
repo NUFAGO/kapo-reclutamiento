@@ -20,7 +20,6 @@ export const CREAR_DEBIDA_DILIGENCIA_MUTATION = `
       controles {
         criterio
         responsable
-        nombre_responsable
         fecha_limite
       }
       created_at
@@ -47,7 +46,6 @@ export const ACTUALIZAR_DEBIDA_DILIGENCIA_MUTATION = `
       controles {
         criterio
         responsable
-        nombre_responsable
         fecha_limite
       }
       created_at

@@ -44,6 +44,7 @@ export {
 // Hooks de aplicaciones
 export {
   useCambiarEstadoKanban,
+  useReactivarAplicacion,
   type AplicacionBasica,
 } from './useAplicaciones';
 
@@ -79,6 +80,17 @@ export {
   type ListUsuariosPaginatedResponse,
   searchUsuarios,
 } from './useUsuarios';
+
+// Hooks de candidatos
+export {
+  useCandidatos,
+  useCandidatoPorDNI,
+  searchCandidatos,
+  type Candidato,
+  type CandidatoFilterInput,
+  type UseCandidatosOptions,
+  type UseCandidatosReturn,
+} from './useCandidatos';
 
 export {
   useReferencias,

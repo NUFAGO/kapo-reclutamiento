@@ -1,21 +1,26 @@
 'use client'
 
+import React from 'react'
 import { useState, useEffect } from 'react'
 import { Plus, Check, Save, Edit } from 'lucide-react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { Select } from '@/components/ui'
 import type { SelectOption } from '@/components/ui'
-import { Button, Textarea, Input } from '@/components/ui'
+import { Button, Textarea, Input, Modal } from '@/components/ui'
+import { FaRegFilePdf } from "react-icons/fa";
 import { useEmpleados, searchEmpleados } from '@/hooks/useEmpleados'
 import { SelectSearch } from '@/components/ui/select-search'
 import { useDebidaDiligenciaPorAplicacion, useCrearDebidaDiligencia, useActualizarDebidaDiligencia, type DebidaDiligencia, type CrearDebidaDiligenciaInput, type ActualizarDebidaDiligenciaInput } from '@/hooks'
 import { showSuccess, showError, TOAST_DURATIONS } from '@/lib/toast-utils'
+import { DebidaDiligenciaPdf } from '../pdfs/DebidaDiligenciaPdf'
+import { pdf } from '@react-pdf/renderer'
 
 interface EvaluacionTabProps {
     aplicacion: AplicacionCandidato
+    onValidationChange?: (isValid: boolean) => void
 }
 
-export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
+export function EvaluacionTab({ aplicacion, onValidationChange }: EvaluacionTabProps) {
     const nombreCompleto = aplicacion.candidato
         ? `${aplicacion.candidato.nombres} ${aplicacion.candidato.apellidoPaterno} ${aplicacion.candidato.apellidoMaterno}`.trim()
         : 'Candidato'
@@ -45,7 +50,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
         item02: { ponderacion: 1, respuesta: '', puntaje: 0 },
         item03: { ponderacion: 2, respuesta: '', puntaje: 0 },
         item04: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item05: { ponderacion: 2, respuesta: '', puntaje: 0 },
+        item05: { ponderacion: 1, respuesta: '', puntaje: 0 },
         item06: { ponderacion: 2, respuesta: '', puntaje: 0 },
         item07: { ponderacion: 2, respuesta: '', puntaje: 0 },
         item08: { ponderacion: 2, respuesta: '', puntaje: 0 },
@@ -99,8 +104,13 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
     // Estado para acción seleccionada
     const [selectedAction, setSelectedAction] = useState('')
 
-    // Estado para controles
+    // Estados para controles
     const [controles, setControles] = useState<{item: number, control: string, responsable: string, fechaLimite: string}[]>([])
+
+    // Estados para PDF
+    const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
+    const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
     // Hooks para empleados
     const { empleados, loading: loadingEmpleados } = useEmpleados()
@@ -109,6 +119,13 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
     const { debidaDiligencia: existingDebidaDiligencia, loading: loadingDebidaDiligencia } = useDebidaDiligenciaPorAplicacion(aplicacion.id)
     const { crearDebidaDiligencia, loading: loadingCrear } = useCrearDebidaDiligencia()
     const { actualizarDebidaDiligencia, loading: loadingActualizar } = useActualizarDebidaDiligencia()
+
+    // Report validation when data is loaded
+    useEffect(() => {
+        if (!loadingDebidaDiligencia) {
+            onValidationChange?.(!!existingDebidaDiligencia)
+        }
+    }, [existingDebidaDiligencia, loadingDebidaDiligencia])
 
     // Cargar datos existentes cuando estén disponibles
     useEffect(() => {
@@ -178,11 +195,20 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
         }
     }, [fechaAprobacion, fechaEvaluacion, evaluadorId, evaluadorNombre, selectedAction, criterios, controles, originalData, isEditMode])
 
-    // Opciones iniciales para responsable
-    const opcionesResponsable: { value: string; label: string }[] = empleados.map(empleado => ({
-        value: empleado.id.toString(),
-        label: `${empleado.nombres} ${empleado.ap_paterno} ${empleado.ap_materno}`.trim()
-    }))
+    // Generar PDF cuando se abre el modal
+    useEffect(() => {
+        if (isPdfModalOpen && existingDebidaDiligencia && !pdfBlobUrl) {
+            generatePdf()
+        }
+
+        // Limpiar URL del PDF cuando se cierra el modal
+        return () => {
+            if (!isPdfModalOpen && pdfBlobUrl) {
+                URL.revokeObjectURL(pdfBlobUrl)
+                setPdfBlobUrl(null)
+            }
+        }
+    }, [isPdfModalOpen, existingDebidaDiligencia, pdfBlobUrl])
 
     const addControl = () => {
         const newItem = controles.length + 1
@@ -214,6 +240,19 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
 
     // Función para guardar la debida diligencia
     const handleSave = async () => {
+        // Validar campos requeridos
+        const validationErrors = validateForm()
+        if (validationErrors.length > 0) {
+            let missingFieldsMessage = ''
+            if (validationErrors.length <= 2) {
+                missingFieldsMessage = validationErrors.join(', ')
+            } else {
+                missingFieldsMessage = `${validationErrors.slice(0, 2).join(', ')}, etc`
+            }
+            showError(`Faltan completar los siguientes campos: ${missingFieldsMessage}`, { duration: TOAST_DURATIONS.LONG })
+            return
+        }
+
         try {
             const baseInput = {
                 evaluador_id: evaluadorId,
@@ -227,7 +266,6 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                 controles: controles.map(control => ({
                     criterio: control.control,
                     responsable: control.responsable,
-                    nombre_responsable: empleados.find(e => e.id.toString() === control.responsable)?.nombres + ' ' + empleados.find(e => e.id.toString() === control.responsable)?.ap_paterno + ' ' + empleados.find(e => e.id.toString() === control.responsable)?.ap_materno || '',
                     fecha_limite: control.fechaLimite
                 })).filter(control => control.criterio && control.responsable && control.fecha_limite)
             }
@@ -275,10 +313,77 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
         setControles(controles.filter((_, i) => i !== index))
     }
 
+    // Función para generar el PDF
+    const generatePdf = async () => {
+        if (!existingDebidaDiligencia) return
+
+        setIsGeneratingPdf(true)
+        try {
+            const pdfDoc = <DebidaDiligenciaPdf aplicacion={aplicacion} debidaDiligencia={existingDebidaDiligencia} />
+            const blob = await pdf(pdfDoc).toBlob()
+            const blobUrl = URL.createObjectURL(blob)
+
+            setPdfBlobUrl(blobUrl)
+        } catch (error) {
+            console.error('Error generando PDF:', error)
+            showError('Error al generar el PDF', { duration: TOAST_DURATIONS.LONG })
+        } finally {
+            setIsGeneratingPdf(false)
+        }
+    }
+
+    // Función para abrir el modal del PDF
+    const handleOpenPdfModal = () => {
+        setIsPdfModalOpen(true)
+    }
+
+    // Función para validar campos requeridos
+    const validateForm = (): string[] => {
+        const errors: string[] = []
+
+        if (!evaluadorId?.trim()) {
+            errors.push('Evaluador')
+        }
+
+        // Verificar que todos los 16 criterios estén seleccionados
+        const criteriosKeys = Object.keys(criterios) as Array<keyof typeof criterios>
+        const missingCriterios = criteriosKeys.filter(key => !criterios[key].respuesta)
+        if (missingCriterios.length > 0) {
+            errors.push(`Faltan ${missingCriterios.length} criterios`)
+        }
+
+        // Verificar que se seleccione una acción si el puntaje total es mayor a 5
+        if (puntajeTotal > 5 && !selectedAction) {
+            errors.push('Seleccionar una acción')
+        }
+
+        if (selectedAction === 'ACEPTAR_CON_CONTROLES') {
+            // Verificar que exista al menos una fila de control completamente rellenada
+            const completeControles = controles.filter(control =>
+                control.control?.trim() && control.responsable?.trim() && control.fechaLimite?.trim()
+            )
+            if (completeControles.length === 0) {
+                errors.push('Agregar al menos 1 control completo')
+            }
+
+            // Verificar que las filas añadidas estén completamente rellenadas
+            if (controles.length > 0) {
+                const incompleteControles = controles.filter(control =>
+                    !control.control?.trim() || !control.responsable?.trim() || !control.fechaLimite?.trim()
+                )
+                if (incompleteControles.length > 0) {
+                    errors.push('Todas las filas de controles deben estar completamente rellenadas')
+                }
+            }
+        }
+
+        return errors
+    }
+
     // Función para calcular puntaje basado en respuesta y item específico
     const calcularPuntajeItem = (item: string, respuesta: 'SI' | 'NO' | 'NA' | ''): number => {
         const ponderaciones: { [key: string]: number } = {
-            item01: 1, item02: 1, item03: 2, item04: 2, item05: 2, item06: 2,
+            item01: 1, item02: 1, item03: 2, item04: 2, item05: 1, item06: 2,
             item07: 2, item08: 2, item09: 2, item10: 2, item11: 2, item12: 2,
             item13: 1, item14: 1, item15: 1, item16: 2
         }
@@ -344,27 +449,43 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
         <div className="space-y-6">
             {/* Header */}
             <section className="border rounded-lg p-3" style={{ borderColor: 'var(--border-color)' }}>
-                <table className="w-full border-collapse text-xs">
-                    <tbody>
-                        <tr>
-                            <td className="border border-gray-300 p-2 font-bold">Código</td>
-                            <td className="border border-gray-300 p-2">{codigo}</td>
-                            <td className="border border-gray-300 p-2 font-bold">Versión</td>
-                            <td className="border border-gray-300 p-2">{version}</td>
-                            <td className="border border-gray-300 p-2 font-bold">Fecha de Aprobación</td>
-                            <td className="border border-gray-300 p-2">
-                                <Input
-                                    type="date"
-                                    value={fechaAprobacion}
-                                    onChange={(e) => setFechaAprobacion(e.target.value)}
-                                    className="h-6 text-xs"
-                                />
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div className="text-md font-bold text-center mt-4">
-                    DEBIDA DILIGENCIA AL PERSONAL
+                <div className='flex gap-2 justify-between items-center'>
+                    <table className="w-full border-collapse text-xs">
+                        <tbody>
+                            <tr>
+                                <td className="border border-gray-300 p-2 font-bold">Código</td>
+                                <td className="border border-gray-300 p-2">{codigo}</td>
+                                <td className="border border-gray-300 p-2 font-bold">Versión</td>
+                                <td className="border border-gray-300 p-2">{version}</td>
+                                <td className="border border-gray-300 p-2 font-bold">Fecha de Aprobación</td>
+                                <td className="border border-gray-300 p-2">
+                                    <Input
+                                        type="date"
+                                        value={fechaAprobacion}
+                                        onChange={(e) => setFechaAprobacion(e.target.value)}
+                                        className="h-6 text-xs"
+                                    />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    {existingDebidaDiligencia && (
+                        <Button
+                            variant="subtle"
+                            color="danger"
+                            size="icon"
+                            onClick={handleOpenPdfModal}
+                        >
+                            <FaRegFilePdf className="w-4 h-4" />
+                        </Button>
+                    )}
+                </div>
+                
+                <div className="flex items-center justify-center mt-2">
+                    <div className="text-md font-bold">
+                        DEBIDA DILIGENCIA AL PERSONAL
+                    </div>
                 </div>
             </section>
 
@@ -462,7 +583,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">1</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2">¿La empresa de la que procede el postulante presenta casos de corrupción, denuncias o mala imagen o se tiene una alta percepción de mala reputación de la misma?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">1</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item01.ponderacion}</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center" style={{ verticalAlign: 'middle' }}>
                                     <Select
                                         options={opcionesRespuesta}
@@ -478,7 +599,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2">¿La ciudad en la que se desarrollará o se desarrolla el postulante o trabajador hay percepción de corrupción?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">1</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item02.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -498,7 +619,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">3</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2">El postulante o trabajador llegó a INACONS por recomendación (SI: 2 puntos) - convocatoria (NO: 1 punto) - cambio de puesto (NA: 0 puntos)</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item03.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -514,7 +635,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">4</td>
                                 <td className="border border-gray-300 p-2">¿El Postulante o Trabajador tiene malas recomendaciones por su ética o incorrecta labor por un anterior jefe? (Si ya es trabajador colocar NA)</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item04.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -530,7 +651,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">5</td>
                                 <td className="border border-gray-300 p-2">¿El postulante o trabajador actuará en representación de INACONS ante el estado, entidades públicas o privadas, funcionarios?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item05.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -546,7 +667,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">6</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2">¿Ha realizado comentarios indicando que cualquier pago particular, contribución u otra actividad es necesaria para "obtener beneficios" o "hacer arreglos"?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item06.ponderacion}</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -562,7 +683,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">7</td>
                                 <td className="border border-gray-300 p-2">¿El perfil de LinkedIn es igual o similar al que consigna en su CV? (Si no tiene perfil consignar NA)</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item07.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -578,7 +699,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">8</td>
                                 <td className="border border-gray-300 p-2">¿Según indagaciones iniciales presenta deudas en la SBS? Adjuntar evidencia.</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item08.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -594,7 +715,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">9</td>
                                 <td className="border border-gray-300 p-2">¿Ha sido sujeto de procesos policiales, penales o judiciales? (Adjuntar declaración jurada)</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item09.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -610,7 +731,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">10</td>
                                 <td className="border border-gray-300 p-2">¿Tendrá interacción frecuente con funcionarios del gobierno o clase política relacionadas con INACONS?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item10.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -630,7 +751,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">11</td>
                                 <td className="border border-gray-300 p-2">¿No tiene experiencia o no cubre expectativas para el puesto?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item11.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -646,7 +767,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">12</td>
                                 <td className="border border-gray-300 p-2">¿Existe conflicto de interés o riesgo de incumplimiento en la relación laboral?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item12.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -662,7 +783,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">13</td>
                                 <td className="border border-gray-300 p-2">¿El título se encuentra registrado en SUNEDU?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">1</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item13.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -678,7 +799,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">14</td>
                                 <td className="border border-gray-300 p-2">¿Ha pasado por evaluación de desempeño?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">1</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item14.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -694,7 +815,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">15</td>
                                 <td className="border border-gray-300 p-2">¿En última evaluación obtuvo ≥ 71%?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">1</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item15.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -710,7 +831,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">16</td>
                                 <td className="border border-gray-300 p-2">¿Mantiene buena relación con todos los niveles de la organización?</td>
-                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">2</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item16.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
                                     <Select
                                         options={opcionesRespuesta}
@@ -786,7 +907,7 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                                         <th className="border border-gray-300 dark:border-gray-600 p-2 text-center">CRITERIOS</th>
                                         <th className="border border-gray-300 dark:border-gray-600 p-2 text-center">RESPONSABLE</th>
                                         <th className="border border-gray-300 dark:border-gray-600 p-2 text-center">RESPUESTA</th>
-                                        <th className="border border-gray-300 dark:border-gray-600 p-2 text-center">PUNTAJE</th>
+                                        <th className="border border-gray-300 dark:border-gray-600 p-2 text-center"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -805,14 +926,12 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                                                         <Textarea value={control.control} onChange={(e) => updateControl(index, 'control', e.target.value)} disabled={!isEditMode && !!existingDebidaDiligencia} className="w-full p-1 text-xs" />
                                                     </td>
                                                     <td className="border border-gray-300 p-2 text-center">
-                                                        <SelectSearch
+                                                        <Input
                                                             value={control.responsable}
-                                                            onChange={(value) => updateControl(index, 'responsable', value || '')}
-                                                            options={opcionesResponsable}
-                                                            onSearch={searchEmpleados}
-                                                            placeholder="Seleccionar..."
+                                                            onChange={(e) => updateControl(index, 'responsable', e.target.value)}
+                                                            placeholder="Escribir responsable..."
                                                             disabled={!isEditMode && !!existingDebidaDiligencia}
-                                                            showSearchIcon={true}
+                                                            className="h-8 text-xs"
                                                         />
                                                     </td>
                                                     <td className="border border-gray-300 p-2 text-center">
@@ -876,6 +995,30 @@ export function EvaluacionTab({ aplicacion }: EvaluacionTabProps) {
                     )}
                 </div>
             </section>
+
+            {/* Modal del PDF */}
+            <Modal
+                isOpen={isPdfModalOpen}
+                onClose={() => setIsPdfModalOpen(false)}
+                title="PDF de Debida Diligencia"
+                size="lg-tall"
+            >
+                {isGeneratingPdf ? (
+                    <div className="flex items-center justify-center h-64">
+                        <p>Generando PDF...</p>
+                    </div>
+                ) : pdfBlobUrl ? (
+                    <iframe
+                        src={pdfBlobUrl}
+                        className="w-full h-full border-0"
+                        title="PDF de Debida Diligencia"
+                    />
+                ) : (
+                    <div className="flex items-center justify-center h-64">
+                        <p>Error al cargar el PDF</p>
+                    </div>
+                )}
+            </Modal>
         </div>
     )
 }

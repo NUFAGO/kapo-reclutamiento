@@ -1,8 +1,10 @@
 'use client'
 
+import React from 'react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { User, Mail, Phone, MapPin, Briefcase, DollarSign, FileText, Download, Eye, X } from 'lucide-react'
 import { FaRegFilePdf } from 'react-icons/fa'
+import { BsFiletypeDocx } from "react-icons/bs";
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
@@ -10,11 +12,17 @@ import Modal from '@/components/ui/modal'
 
 interface RecepcionCVTabProps {
     aplicacion: AplicacionCandidato
+    onValidationChange?: (isValid: boolean) => void
 }
 
-export function RecepcionCVTab({ aplicacion }: RecepcionCVTabProps) {
+export function RecepcionCVTab({ aplicacion, onValidationChange }: RecepcionCVTabProps) {
     const { candidato, convocatoria, pretensionEconomica, aniosExperienciaPuesto, curriculumUrl } = aplicacion
     const [showCVModal, setShowCVModal] = useState(false)
+
+    // Always valid since CV reception is always complete
+    React.useEffect(() => {
+        onValidationChange?.(true)
+    }, [])
 
     // Formatear pretensión económica
     const pretensionFormateada = new Intl.NumberFormat('es-PE', {
@@ -29,6 +37,9 @@ export function RecepcionCVTab({ aplicacion }: RecepcionCVTabProps) {
         : 'Sin información'
 
     const experienciaGeneral = aplicacion.aniosExperienciaGeneral ?? aplicacion.respuestasFormulario?.['anios_experiencia_general'] ?? aplicacion.respuestasFormulario?.['experiencia_general']
+
+    // Check if curriculum is a PDF
+    const isPdf = curriculumUrl?.toLowerCase().endsWith('.pdf')
 
     return (
         <>
@@ -191,11 +202,17 @@ export function RecepcionCVTab({ aplicacion }: RecepcionCVTabProps) {
                     }}>
                         {curriculumUrl ? (
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
+                                {isPdf ? (
                                     <div className="p-2 rounded-full bg-[#ff000017] ">
                                         <FaRegFilePdf className="w-5 h-5 text-[red]" style={{ stroke: '#dc2626', strokeWidth: '1.5' }} />
                                     </div>
-                                    <div>
+                                ) : (
+                                    <div className="p-2 rounded-full bg-[#0000ff17] ">
+                                        <BsFiletypeDocx className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                )}
+                                <div>
                                         <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                                             {(() => {
                                                 const fileName = curriculumUrl?.split('/').pop();
@@ -223,14 +240,16 @@ export function RecepcionCVTab({ aplicacion }: RecepcionCVTabProps) {
                                     </a>
                                 </Button>
 
-                                <Button
-                                    variant="subtle"
-                                    color="primary"
-                                    size="icon"
-                                    onClick={() => setShowCVModal(true)}
-                                >
-                                    <Eye className="h-4 w-4" />
-                                </Button>
+                                {isPdf && (
+                                    <Button
+                                        variant="subtle"
+                                        color="primary"
+                                        size="icon"
+                                        onClick={() => setShowCVModal(true)}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Button>
+                                )}
                                 </div>
 
                         </div>

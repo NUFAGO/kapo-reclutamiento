@@ -75,7 +75,6 @@ export function SelectSearch({
     
     // Si el inputValue es exactamente el label de la opción seleccionada, no buscar
     if (selectedOption && inputValue === selectedOption.label) {
-      console.log('SelectSearch: inputValue is selected label, skipping search');
       return;
     }
     

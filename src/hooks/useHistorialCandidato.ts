@@ -183,7 +183,7 @@ export function useRegistrarCambioHistorial(): UseRegistrarCambioHistorialResult
       queryClient.invalidateQueries({ queryKey: ['ultimo-cambio-estado', data.aplicacionId] });
       queryClient.invalidateQueries({ queryKey: ['listar-historial'] });
 
-      toast.success('Cambio registrado en el historial');
+      // No mostrar toast de éxito ya que se asume
     },
     onError: (error) => {
       toast.error(`Error al registrar cambio: ${error.message}`);

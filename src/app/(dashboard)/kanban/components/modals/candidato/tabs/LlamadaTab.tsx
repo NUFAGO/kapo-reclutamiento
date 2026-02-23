@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useState, useEffect } from 'react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { Phone, Calendar, MapPin, Briefcase, User, DollarSign, FileText, MessageSquare, Save, Edit, File } from 'lucide-react'
@@ -15,14 +16,22 @@ import { pdf } from '@react-pdf/renderer'
 
 interface LlamadaTabProps {
     aplicacion: AplicacionCandidato
+    onValidationChange?: (isValid: boolean) => void
 }
 
-export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
+export function LlamadaTab({ aplicacion, onValidationChange }: LlamadaTabProps) {
     // Hook para obtener información del usuario autenticado
     const { user } = useAuth()
 
     // Hook para cargar datos
     const { entrevista, loading: loadingEntrevista } = useEntrevistaLlamadaPorAplicacion(aplicacion.id)
+
+    // Report validation when data is loaded
+    React.useEffect(() => {
+        if (!loadingEntrevista) {
+            onValidationChange?.(!!entrevista)
+        }
+    }, [entrevista, loadingEntrevista])
 
     // Hooks para operaciones CRUD
     const { crearEntrevista, loading: loadingCrear } = useCrearEntrevistaLlamada()
@@ -43,16 +52,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
         disponibilidad_viajar: 'SI' | 'NO' | undefined
         estudios: string
         estado_civil: 'SOLTERO' | 'CASADO' | 'DIVORCIADO' | 'VIUDO' | 'CONVIVIENTE' | undefined
-        hijos: number
-        edad: number
+        hijos: number | undefined
+        edad: number | undefined
         experiencia_general: string
         experiencia_rubro: 'BAJO' | 'MEDIO' | 'ALTO' | undefined
         busca_estabilidad: string
         retos_profesionales: string
-        desenvolvimiento: number
+        desenvolvimiento: number | undefined
         conocimiento_perfil: 'SI' | 'NO' | undefined
-        interes_puesto: number
-        pretension_monto: number
+        interes_puesto: number | undefined
+        pretension_monto: number | undefined
         pretension_negociable: 'SI' | 'NO' | undefined
         comentarios: string
         solicitar_referencias: string
@@ -67,16 +76,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
         disponibilidad_viajar: undefined,
         estudios: '',
         estado_civil: undefined,
-        hijos: 0,
-        edad: 18,
+        hijos: undefined,
+        edad: undefined,
         experiencia_general: '',
         experiencia_rubro: undefined,
         busca_estabilidad: '',
         retos_profesionales: '',
-        desenvolvimiento: 1,
+        desenvolvimiento: undefined,
         conocimiento_perfil: undefined,
-        interes_puesto: 1,
-        pretension_monto: 0,
+        interes_puesto: undefined,
+        pretension_monto: undefined,
         pretension_negociable: undefined,
         comentarios: '',
         solicitar_referencias: '',
@@ -199,11 +208,15 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
         if (formData.estado_civil === undefined) {
             errors.push('Estado Civil')
         }
-        if (formData.hijos === undefined || formData.hijos < 0) {
+        if (formData.hijos === undefined) {
             errors.push('Número de Hijos')
+        } else if (formData.hijos < 0) {
+            errors.push('Número de Hijos (no negativo)')
         }
-        if (formData.edad === undefined || formData.edad < 18) {
+        if (formData.edad === undefined) {
             errors.push('Edad')
+        } else if (formData.edad < 18) {
+            errors.push('Edad (mínimo 18)')
         }
         if (!formData.experiencia_general?.trim()) {
             errors.push('Experiencia General')
@@ -217,17 +230,23 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
         if (!formData.retos_profesionales?.trim()) {
             errors.push('Retos Profesionales')
         }
-        if (formData.desenvolvimiento === undefined || formData.desenvolvimiento < 1 || formData.desenvolvimiento > 10) {
+        if (formData.desenvolvimiento === undefined) {
             errors.push('Desenvolvimiento')
+        } else if (formData.desenvolvimiento < 1 || formData.desenvolvimiento > 10) {
+            errors.push('Desenvolvimiento (1-10)')
         }
         if (formData.conocimiento_perfil === undefined) {
             errors.push('Conocimiento Según Perfil')
         }
-        if (formData.interes_puesto === undefined || formData.interes_puesto < 1 || formData.interes_puesto > 10) {
+        if (formData.interes_puesto === undefined) {
             errors.push('Interés en el Puesto')
+        } else if (formData.interes_puesto < 1 || formData.interes_puesto > 10) {
+            errors.push('Interés en el Puesto (1-10)')
         }
-        if (formData.pretension_monto === undefined || formData.pretension_monto < 0) {
+        if (formData.pretension_monto === undefined) {
             errors.push('Monto Solicitado')
+        } else if (formData.pretension_monto < 0) {
+            errors.push('Monto Solicitado (no negativo)')
         }
         if (formData.pretension_negociable === undefined) {
             errors.push('Pretensión Negociable')
@@ -282,16 +301,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                 disponibilidad_viajar: formData.disponibilidad_viajar as 'SI' | 'NO',
                 estudios: formData.estudios,
                 estado_civil: formData.estado_civil as 'SOLTERO' | 'CASADO' | 'DIVORCIADO' | 'VIUDO' | 'CONVIVIENTE',
-                hijos: formData.hijos,
-                edad: formData.edad,
+                hijos: formData.hijos as number,
+                edad: formData.edad as number,
                 experiencia_general: formData.experiencia_general,
                 experiencia_rubro: formData.experiencia_rubro as 'BAJO' | 'MEDIO' | 'ALTO',
                 busca_estabilidad: formData.busca_estabilidad,
                 retos_profesionales: formData.retos_profesionales,
-                desenvolvimiento: formData.desenvolvimiento,
+                desenvolvimiento: formData.desenvolvimiento as number,
                 conocimiento_perfil: formData.conocimiento_perfil as 'SI' | 'NO',
-                interes_puesto: formData.interes_puesto,
-                pretension_monto: formData.pretension_monto,
+                interes_puesto: formData.interes_puesto as number,
+                pretension_monto: formData.pretension_monto as number,
                 pretension_negociable: formData.pretension_negociable as 'SI' | 'NO',
                 comentarios: formData.comentarios,
                 solicitar_referencias: formData.solicitar_referencias,
@@ -309,16 +328,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                 disponibilidad_viajar: formData.disponibilidad_viajar as 'SI' | 'NO',
                 estudios: formData.estudios,
                 estado_civil: formData.estado_civil as 'SOLTERO' | 'CASADO' | 'DIVORCIADO' | 'VIUDO' | 'CONVIVIENTE',
-                hijos: formData.hijos,
-                edad: formData.edad,
+                hijos: formData.hijos as number,
+                edad: formData.edad as number,
                 experiencia_general: formData.experiencia_general,
                 experiencia_rubro: formData.experiencia_rubro as 'BAJO' | 'MEDIO' | 'ALTO',
                 busca_estabilidad: formData.busca_estabilidad,
                 retos_profesionales: formData.retos_profesionales,
-                desenvolvimiento: formData.desenvolvimiento,
+                desenvolvimiento: formData.desenvolvimiento as number,
                 conocimiento_perfil: formData.conocimiento_perfil as 'SI' | 'NO',
-                interes_puesto: formData.interes_puesto,
-                pretension_monto: formData.pretension_monto,
+                interes_puesto: formData.interes_puesto as number,
+                pretension_monto: formData.pretension_monto as number,
                 pretension_negociable: formData.pretension_negociable as 'SI' | 'NO',
                 comentarios: formData.comentarios,
                 solicitar_referencias: formData.solicitar_referencias,
@@ -494,8 +513,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             placeholder="Cantidad"
                             className="h-8 text-xs"
                             min="0"
-                            value={formData.hijos}
-                            onChange={(e) => handleInputChange('hijos', parseInt(e.target.value) || 0)}
+                            value={formData.hijos ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value.trim();
+                                if (value === '') {
+                                    handleInputChange('hijos', undefined);
+                                } else {
+                                    const parsed = parseInt(value);
+                                    handleInputChange('hijos', isNaN(parsed) ? undefined : parsed);
+                                }
+                            }}
                             readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
@@ -511,8 +538,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             min="18"
                             max="100"
-                            value={formData.edad}
-                            onChange={(e) => handleInputChange('edad', parseInt(e.target.value) || 18)}
+                            value={formData.edad ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value.trim();
+                                if (value === '') {
+                                    handleInputChange('edad', undefined);
+                                } else {
+                                    const parsed = parseInt(value);
+                                    handleInputChange('edad', isNaN(parsed) ? undefined : parsed);
+                                }
+                            }}
                             readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
@@ -602,8 +637,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             min="1"
                             max="10"
-                            value={formData.desenvolvimiento}
-                            onChange={(e) => handleInputChange('desenvolvimiento', parseInt(e.target.value) || 1)}
+                            value={formData.desenvolvimiento ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value.trim();
+                                if (value === '') {
+                                    handleInputChange('desenvolvimiento', undefined);
+                                } else {
+                                    const parsed = parseInt(value);
+                                    handleInputChange('desenvolvimiento', isNaN(parsed) ? undefined : parsed);
+                                }
+                            }}
                             readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
@@ -633,8 +676,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             className="h-8 text-xs"
                             min="1"
                             max="10"
-                            value={formData.interes_puesto}
-                            onChange={(e) => handleInputChange('interes_puesto', parseInt(e.target.value) || 1)}
+                            value={formData.interes_puesto ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value.trim();
+                                if (value === '') {
+                                    handleInputChange('interes_puesto', undefined);
+                                } else {
+                                    const parsed = parseInt(value);
+                                    handleInputChange('interes_puesto', isNaN(parsed) ? undefined : parsed);
+                                }
+                            }}
                             readOnly={!isEditMode && !!entrevista}
                         />
                     </div>
@@ -658,8 +709,16 @@ export function LlamadaTab({ aplicacion }: LlamadaTabProps) {
                             placeholder="Monto en soles"
                             className="h-8 text-xs"
                             min="0"
-                            value={formData.pretension_monto}
-                            onChange={(e) => handleInputChange('pretension_monto', parseFloat(e.target.value) || 0)}
+                            value={formData.pretension_monto ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value.trim();
+                                if (value === '') {
+                                    handleInputChange('pretension_monto', undefined);
+                                } else {
+                                    const parsed = parseFloat(value);
+                                    handleInputChange('pretension_monto', isNaN(parsed) ? undefined : parsed);
+                                }
+                            }}
                             readOnly={!isEditMode && !!entrevista}
                         />
                     </div>

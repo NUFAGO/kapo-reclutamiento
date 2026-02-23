@@ -1,32 +1,8 @@
-/**
- * 🔄 PROVIDERS GLOBALES - CONTEXTO DE LA APLICACIÓN
- *
- * Responsabilidad: Proporcionar estado global y configuración a toda la app
- * Flujo: Envuelve componentes → Proporciona React Query, Toasts, etc.
- *
- * Contiene:
- * - QueryClient: Cache de datos, loading states (React Query)
- * - Toaster: Sistema de notificaciones globales
- * - [Futuro] AuthProvider, ThemeProvider, etc.
- */
-
-/**
- * 🔄 PROVIDERS GLOBALES - CONTEXTO DE LA APLICACIÓN
- *
- * Responsabilidad: Proporcionar estado global y configuración a toda la app
- * Flujo: Envuelve componentes → Proporciona React Query, Auth, Toasts, etc.
- *
- * Contiene:
- * - QueryClient: Cache de datos, loading states (React Query)
- * - AuthProvider: Estado de autenticación y usuario
- * - Toaster: Sistema de notificaciones globales
- * - [Futuro] ThemeProvider, ConfirmProvider, etc.
- */
 
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, ToastBar, toast } from 'react-hot-toast';
 import { useState } from 'react';
 import { AuthProvider } from '@/context/auth-context';
 import { ThemeProvider } from '@/context/theme-context';
@@ -64,8 +40,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             background: 'var(--card-bg)',
             color: 'var(--foreground)',
             border: '1px solid var(--border-color)',
-            fontSize: '0.875rem',
+            fontSize: '0.75rem',
             borderRadius: '0.5rem',
+            padding: '8px 12px',
           },
           success: {
             duration: 3000, // Default success duration (3s for updates, can be overridden)
@@ -82,7 +59,35 @@ export function Providers({ children }: { children: React.ReactNode }) {
             },
           },
         }}
-      />
+      >
+        {(t) => (
+          <ToastBar toast={t} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {({ icon, message }) => (
+              <>
+                <span>{icon}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>{message}</span>
+                {t.type !== 'loading' && (
+                  <button
+                    onClick={() => toast.dismiss(t.id)}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      color: 'inherit', 
+                      fontSize: '1rem',
+                      padding: '0',
+                      lineHeight: '1',
+                      flexShrink: 0
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </>
+            )}
+          </ToastBar>
+        )}
+      </Toaster>
     </QueryClientProvider>
   );
 }

@@ -1,7 +1,6 @@
-'use client'
-
 import React, { useState } from 'react'
 import { Modal, NotificationModal, Button, type CheckboxOption } from '@/components/ui'
+import { SelectSearch } from '@/components/ui/select-search'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { KANBAN_ESTADOS, type EstadoKanban, ESTADO_LABELS } from '@/app/(dashboard)/kanban/lib/kanban.constants'
 import { RecepcionCVTab } from './tabs/RecepcionCVTab'
@@ -10,19 +9,23 @@ import { PrimeraEntrevistaTab } from './tabs/PrimeraEntrevistaTab'
 import { SegundoEntrevistaTab } from './tabs/SegundaEntrevistaTab'
 import { ReferenciaTab } from './tabs/ReferenciaTab'
 import { EvaluacionTab } from './tabs/EvaluacionTab'
-import { User, FileText, Phone, Calendar, CheckCircle, XCircle } from 'lucide-react'
-import { useCambiarEstadoKanban } from '@/hooks'
-import { showSuccess, showError, TOAST_DURATIONS } from '@/lib/toast-utils'
+import { User, FileText, Phone, Calendar, CheckCircle, XCircle, History, Check, X } from 'lucide-react'
+import { CgArrowsExchange } from "react-icons/cg";
+import { useConvocatorias, useCambiarEstadoKanban, useReactivarAplicacion } from '@/hooks'
+import { showSuccess, showError, showWarning, TOAST_DURATIONS } from '@/lib/toast-utils'
 import { getTabColorStyles } from '@/app/(dashboard)/kanban/utils/colors'
 import { useMutation } from '@tanstack/react-query'
 import { graphqlRequest } from '@/lib/graphql-client'
-import { CREAR_COMUNICACION_ENTRADA_MUTATION } from '@/graphql/mutations'
+import { CREAR_COMUNICACION_ENTRADA_MUTATION, ACTUALIZAR_APLICACION_MUTATION } from '@/graphql/mutations'
+import HistorialAplicacionModal from './HistorialAplicacionModal'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface CandidateModalProps {
     isOpen: boolean
     onClose: () => void
     aplicacion: AplicacionCandidato
     headerBackground?: string
+    onAplicacionStateChanged?: (aplicacionId: string, newEstado: EstadoKanban) => void
 }
 
 // Configuración de tabs según el estado
@@ -87,7 +90,7 @@ const getSolidColorFromGradient = (gradient: string): string => {
     return 'var(--primary-color)';
 };
 
-export default function CandidateModal({ isOpen, onClose, aplicacion, headerBackground }: CandidateModalProps) {
+export default function CandidateModal({ isOpen, onClose, aplicacion, headerBackground, onAplicacionStateChanged }: CandidateModalProps) {
     const [activeTab, setActiveTab] = useState(() => {
         const initialTab = getInitialTab(aplicacion.estadoKanban);
         return initialTab;
@@ -95,6 +98,10 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     const [showRejectionModal, setShowRejectionModal] = useState(false)
     const [showFinalizadaModal, setShowFinalizadaModal] = useState(false)
     const [loadingFinalizada, setLoadingFinalizada] = useState(false)
+    const [tabValidations, setTabValidations] = useState<Record<string, boolean>>({})
+    const [showHistorialModal, setShowHistorialModal] = useState(false)
+    const [showExchangeButtons, setShowExchangeButtons] = useState(false)
+    const [selectedConvocatoriaId, setSelectedConvocatoriaId] = useState<string>('')
 
     // Checkboxes for finalizada confirmation
     const [finalizadaCheckboxes, setFinalizadaCheckboxes] = useState<CheckboxOption[]>([
@@ -105,14 +112,64 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     // Extraer color sólido del degradado para usar en tabs
     const headerColor = headerBackground ? getSolidColorFromGradient(headerBackground) : 'var(--primary-color)';
 
+    // Hook para invalidar queries
+    const queryClient = useQueryClient()
+
     // Actualizar el tab activo cuando cambie la aplicación
     React.useEffect(() => {
         const newTab = getInitialTab(aplicacion.estadoKanban);
         setActiveTab(newTab);
+        setTabValidations({});
+        // Resetear estado de cambio de convocatoria cuando cambie la aplicación
+        setShowExchangeButtons(false);
+        setSelectedConvocatoriaId('');
     }, [aplicacion.id, aplicacion.estadoKanban])
+
+    // Resetear estado cuando se abre/cierra el modal
+    React.useEffect(() => {
+        if (!isOpen) {
+            // Cuando el modal se cierra, resetear todos los estados
+            setShowExchangeButtons(false);
+            setSelectedConvocatoriaId('');
+            setShowRejectionModal(false);
+            setShowFinalizadaModal(false);
+            setShowHistorialModal(false);
+            setLoadingFinalizada(false);
+            setTabValidations({});
+            setFinalizadaCheckboxes([
+                { id: 'llamadaConfirmada', label: 'Llamada Confirmada', checked: false },
+                { id: 'comunicacionConfirmada', label: 'Comunicación Confirmada', checked: false }
+            ]);
+        }
+    }, [isOpen])
 
     // Hook para cambiar estado kanban
     const { cambiarEstado, loading: loadingCambioEstado } = useCambiarEstadoKanban()
+
+    // Hook para reactivar aplicación
+    const { reactivarAplicacion, loading: loadingReactivacion } = useReactivarAplicacion()
+
+    // Hook para obtener convocatorias disponibles
+    const { convocatorias, loading: loadingConvocatorias } = useConvocatorias({ limit: 100 })
+
+    // Hook para actualizar aplicación (cambiar convocatoria)
+    const actualizarAplicacionMutation = useMutation({
+        mutationFn: async (input: { convocatoriaId: string }) => {
+            const response = await graphqlRequest<{
+                actualizarAplicacion: AplicacionCandidato
+            }>(ACTUALIZAR_APLICACION_MUTATION, {
+                id: aplicacion.id,
+                input: {
+                    convocatoriaId: input.convocatoriaId
+                }
+            })
+            return response.actualizarAplicacion
+        },
+        onSuccess: () => {
+            // Invalidar cache de kanban-data para refrescar el kanban
+            queryClient.invalidateQueries({ queryKey: ['kanban-data'] })
+        }
+    })
 
     // Hook para crear comunicación de entrada
     const crearComunicacionEntradaMutation = useMutation({
@@ -158,8 +215,38 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
         }
     }
 
+    // Función para obtener el tab id correspondiente a un estado
+    const getTabIdForEstado = (estado: EstadoKanban): string | null => {
+        switch (estado) {
+            case KANBAN_ESTADOS.CVS_RECIBIDOS:
+                return 'recepcion'
+            case KANBAN_ESTADOS.POR_LLAMAR:
+            case KANBAN_ESTADOS.ENTREVISTA_PREVIA:
+                return 'llamada'
+            case KANBAN_ESTADOS.PROGRAMAR_1RA_ENTREVISTA:
+                return 'entrevista1'
+            case KANBAN_ESTADOS.PROGRAMAR_2DA_ENTREVISTA:
+                return 'entrevista2'
+            case KANBAN_ESTADOS.REFERENCIAS:
+                return 'referencias'
+            case KANBAN_ESTADOS.EVALUACION_ANTISOBORNO:
+                return 'documentos'
+            case KANBAN_ESTADOS.APROBACION_GERENCIA:
+                return 'aprobacion'
+            default:
+                return null
+        }
+    }
+
     // Función para aprobar candidato (pasar al siguiente estado)
     const handleAprobar = async () => {
+        // Check if the current state's tab data is filled
+        const tabId = getTabIdForEstado(aplicacion.estadoKanban)
+        if (tabId && tabValidations[tabId] === false) {
+            showWarning('Completa los datos requeridos antes de continuar', { duration: TOAST_DURATIONS.NORMAL })
+            return
+        }
+
         const siguienteEstado = getSiguienteEstadoAprobacion(aplicacion.estadoKanban)
 
         // Si el siguiente estado es FINALIZADA, mostrar modal de confirmación
@@ -177,10 +264,18 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                 estadoKanban: siguienteEstado,
                 candidatoId: aplicacion.candidatoId,
                 motivo,
-                comentarios
+                comentarios,
+                estadoAnterior: aplicacion.estadoKanban
             })
             showSuccess('Candidato aprobado correctamente', { duration: TOAST_DURATIONS.NORMAL })
             onClose()
+            if (onAplicacionStateChanged) {
+                setTimeout(() => {
+                    onAplicacionStateChanged(aplicacion.id, siguienteEstado)
+                }, 300)
+            } else {
+                console.log('CandidateModal: onAplicacionStateChanged is not defined')
+            }
         } catch (error) {
             console.error('Error al aprobar candidato:', error)
             showError('Error al aprobar candidato. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
@@ -202,11 +297,15 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                 estadoKanban: KANBAN_ESTADOS.DESCARTADO,
                 candidatoId: aplicacion.candidatoId,
                 motivo: 'Rechazo manual desde recepción de CV',
-                comentarios: comentario
+                comentarios: comentario,
+                estadoAnterior: aplicacion.estadoKanban
             })
             showSuccess('Candidato rechazado correctamente', { duration: TOAST_DURATIONS.NORMAL })
             setShowRejectionModal(false)
             onClose()
+            if (onAplicacionStateChanged) {
+                setTimeout(() => onAplicacionStateChanged(aplicacion.id, KANBAN_ESTADOS.DESCARTADO), 300)
+            }
         } catch (error) {
             console.error('Error al rechazar candidato:', error)
             showError('Error al rechazar candidato. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
@@ -244,12 +343,16 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                 estadoKanban: KANBAN_ESTADOS.FINALIZADA,
                 candidatoId: aplicacion.candidatoId,
                 motivo,
-                comentarios
+                comentarios,
+                estadoAnterior: aplicacion.estadoKanban
             })
 
             showSuccess('Candidato finalizado correctamente', { duration: TOAST_DURATIONS.NORMAL })
             setShowFinalizadaModal(false)
             onClose()
+            if (onAplicacionStateChanged) {
+                setTimeout(() => onAplicacionStateChanged(aplicacion.id, KANBAN_ESTADOS.FINALIZADA), 300)
+            }
         } catch (error) {
             console.error('Error al finalizar candidato:', error)
             showError('Error al finalizar candidato. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
@@ -263,6 +366,74 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
         setShowFinalizadaModal(false)
     }
 
+    // Función para mostrar/ocultar botones de cambio de convocatoria
+    const handleToggleExchangeButtons = () => {
+        setShowExchangeButtons(!showExchangeButtons)
+    }
+
+    // Función para confirmar cambio de convocatoria
+    const handleConfirmExchange = async () => {
+        if (!selectedConvocatoriaId) {
+            showError('Selecciona una convocatoria primero', { duration: TOAST_DURATIONS.NORMAL })
+            return
+        }
+
+        if (selectedConvocatoriaId === aplicacion.convocatoriaId) {
+            showWarning('La convocatoria seleccionada es la misma que la actual', { duration: TOAST_DURATIONS.NORMAL })
+            setShowExchangeButtons(false)
+            return
+        }
+
+        try {
+            const result = await actualizarAplicacionMutation.mutateAsync({
+                convocatoriaId: selectedConvocatoriaId
+            })
+
+            showSuccess('Convocatoria actualizada correctamente', { duration: TOAST_DURATIONS.NORMAL })
+            setShowExchangeButtons(false)
+            setSelectedConvocatoriaId('')
+
+            // Esperar un poco para que la invalidación de cache se complete antes de cerrar
+            setTimeout(() => {
+                onClose()
+                if (onAplicacionStateChanged) {
+                    onAplicacionStateChanged(aplicacion.id, aplicacion.estadoKanban)
+                }
+            }, 500)
+        } catch (error) {
+            console.error('Error al cambiar convocatoria:', error)
+            showError('Error al cambiar convocatoria. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
+        }
+    }
+
+    // Función para cancelar cambio de convocatoria
+    const handleCancelExchange = () => {
+        setShowExchangeButtons(false)
+    }
+
+    // Función para reactivar aplicación desde estado archivado
+    const handleReactivar = async () => {
+        const motivo = `Reactivación desde ${ESTADO_LABELS[aplicacion.estadoKanban]}`
+        const comentarios = 'Candidato reactivado para continuar con el proceso de selección'
+
+        try {
+            const result = await reactivarAplicacion({
+                id: aplicacion.id,
+                motivo,
+                comentarios
+            })
+            showSuccess('Candidato reactivado correctamente', { duration: TOAST_DURATIONS.NORMAL })
+            onClose()
+            // Usar el estado retornado por la mutación (determinado por el historial)
+            if (onAplicacionStateChanged) {
+                setTimeout(() => onAplicacionStateChanged(aplicacion.id, result.estadoKanban), 300)
+            }
+        } catch (error) {
+            console.error('Error al reactivar candidato:', error)
+            showError('Error al reactivar candidato. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
+        }
+    }
+
     const nombreCompleto = aplicacion.candidato
         ? `${aplicacion.candidato.nombres} ${aplicacion.candidato.apellidoPaterno} ${aplicacion.candidato.apellidoMaterno}`.trim()
         : 'Candidato'
@@ -271,19 +442,23 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
 
     // Renderizar contenido del tab activo
     const renderTabContent = () => {
+        const validationCallback = (isValid: boolean) => {
+            setTabValidations(prev => ({ ...prev, [activeTab]: isValid }))
+        }
+
         switch (activeTab) {
             case 'recepcion':
-                return <RecepcionCVTab aplicacion={aplicacion} />
+                return <RecepcionCVTab aplicacion={aplicacion} onValidationChange={validationCallback} />
             case 'llamada':
-                return <LlamadaTab aplicacion={aplicacion} />
+                return <LlamadaTab aplicacion={aplicacion} onValidationChange={validationCallback} />
             case 'entrevista1':
-                return <PrimeraEntrevistaTab aplicacion={aplicacion} />
+                return <PrimeraEntrevistaTab aplicacion={aplicacion} onValidationChange={validationCallback} />
             case 'entrevista2':
-                return <SegundoEntrevistaTab aplicacion={aplicacion} />
+                return <SegundoEntrevistaTab aplicacion={aplicacion} onValidationChange={validationCallback} />
             case 'referencias':
-                return <ReferenciaTab aplicacion={aplicacion} />
+                return <ReferenciaTab aplicacion={aplicacion} onValidationChange={validationCallback} />
             case 'documentos':
-                return <EvaluacionTab aplicacion={aplicacion} />
+                return <EvaluacionTab aplicacion={aplicacion} onValidationChange={validationCallback} />
             case 'aprobacion':
                 return <div className="p-4 text-center" style={{ color: 'var(--text-secondary)' }}>Tab de Aprobación (próximamente)</div>
             default:
@@ -292,18 +467,76 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     }
 
     const modalTitle = (
-        <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-400/20 flex items-center justify-center">
-                <User className="w-5 h-5" style={{ color: 'var(--primary-color)' }} />
+        <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-400/20 flex items-center justify-center">
+                    <User className="w-5 h-5" style={{ color: 'var(--primary-color)' }} />
+                </div>
+                <div className='flex items-start flex-col'>
+                    <h2 className="text-sm font-bold text-left w-full">
+                        {nombreCompleto}
+                    </h2>
+
+                    <div className='flex items-center gap-1'>
+                        {!showExchangeButtons ? (
+                            <p className="text-xs text-left w-full" style={{ color: 'var(--text-secondary)' }}>
+                                {aplicacion.convocatoria?.cargoNombre || 'Sin cargo'} {aplicacion.convocatoria?.especialidad_nombre ? `(${aplicacion.convocatoria.especialidad_nombre})` : ''}
+                            </p>
+                        ) : (
+                            <div className="w-48">
+                                <SelectSearch
+                                    value={selectedConvocatoriaId}
+                                    onChange={(value) => setSelectedConvocatoriaId(value || '')}
+                                    placeholder="Seleccionar..."
+                                    disabled={loadingConvocatorias}
+                                    isLoading={loadingConvocatorias}
+                                    showSearchIcon={true}
+                                    options={[
+                                        ...convocatorias.map((convocatoria) => ({
+                                            value: convocatoria.id,
+                                            label: `${convocatoria.cargo_nombre || 'Sin cargo'} ${convocatoria.especialidad_nombre ? `(${convocatoria.especialidad_nombre})` : ''} - ${convocatoria.prioridad}`.trim()
+                                        }))
+                                    ]}
+                                />
+                            </div>
+                        )}
+                        {!showExchangeButtons ? (
+                            <button 
+                                className='rounded-[5px] bg-gray-300/20 dark:bg-gray-100/10 hover:bg-gray-50/30 dark:hover:bg-gray-300/20'
+                                onClick={handleToggleExchangeButtons}
+                                title="Cambiar convocatoria"
+                            >
+                                <CgArrowsExchange className="size-5" />
+                            </button>
+                        ) : (
+                            <div className="flex items-center gap-1">
+                                <button 
+                                    className='rounded-[5px] bg-green-500/20 hover:bg-green-600/40 text-green-600'
+                                    onClick={handleConfirmExchange}
+                                    title="Confirmar cambio"
+                                >
+                                    <Check className="size-4" />
+                                </button>
+                                <button 
+                                    className='rounded-[5px] bg-red-500/20 hover:bg-red-600/40 text-red-600'
+                                    onClick={handleCancelExchange}
+                                    title="Cancelar cambio"
+                                >
+                                    <X className="size-4" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-            <div className='flex justify-center items-center flex-col'>
-                <h2 className="text-sm font-bold" style={{ color: 'var(--text-on-content-bg-heading)' }}>
-                    {nombreCompleto}
-                </h2>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    {aplicacion.convocatoria?.cargoNombre || 'Sin cargo'}
-                </p>
-            </div>
+
+            <button
+                className=' p-1.5 rounded-full mr-3 bg-gray-300/50 dark:bg-gray-100/10 hover:bg-gray-50/30 dark:hover:bg-gray-300/20'
+                onClick={() => setShowHistorialModal(true)}
+                title="Ver historial de cambios"
+            >
+                <History className='size-4' />
+            </button>
         </div>
     )
 
@@ -313,33 +546,53 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
         if (siguienteEstado === estadoActual) {
             return 'Aprobar' // Fallback si no hay siguiente estado
         }
-        return `Avanzar a ${ESTADO_LABELS[siguienteEstado]}`
+        return `Avanzar`
     }
+
+    // Determinar si mostrar botón de reactivación (todos los estados archivados)
+    const mostrarBotonReactivar = aplicacion.estadoKanban === KANBAN_ESTADOS.RECHAZADO_POR_CANDIDATO ||
+        aplicacion.estadoKanban === KANBAN_ESTADOS.DESCARTADO ||
+        aplicacion.estadoKanban === KANBAN_ESTADOS.POSIBLES_CANDIDATOS
 
     const modalFooter = (
         <div className="flex items-center justify-between px-4">
             <div></div>
             <div className="flex gap-2">
-                <Button
-                    variant="custom"
-                    color="danger"
-                    size="xs"
-                    icon={<XCircle className="w-4 h-4" />}
-                    onClick={handleRechazar}
-                    disabled={loadingCambioEstado}
-                >
-                    {loadingCambioEstado ? 'Procesando...' : 'Descartar'}
-                </Button>
-                <Button
-                    variant="custom"
-                    color="primary"
-                    size="xs"
-                    icon={<CheckCircle className="w-4 h-4" />}
-                    onClick={handleAprobar}
-                    disabled={loadingCambioEstado}
-                >
-                    {loadingCambioEstado ? 'Procesando...' : getTextoBotonAprobar(aplicacion.estadoKanban)}
-                </Button>
+                {aplicacion.estadoKanban !== KANBAN_ESTADOS.DESCARTADO && (
+                    <Button
+                        variant="custom"
+                        color="danger"
+                        size="xs"
+                        icon={<XCircle className="w-4 h-4" />}
+                        onClick={handleRechazar}
+                        disabled={loadingCambioEstado || loadingReactivacion}
+                    >
+                        {loadingCambioEstado || loadingReactivacion ? 'Procesando...' : 'Descartar'}
+                    </Button>
+                )}
+                {mostrarBotonReactivar ? (
+                    <Button
+                        variant="custom"
+                        color="success"
+                        size="xs"
+                        icon={<CheckCircle className="w-4 h-4" />}
+                        onClick={handleReactivar}
+                        disabled={loadingCambioEstado || loadingReactivacion}
+                    >
+                        {loadingReactivacion ? 'Reactivando...' : 'Reactivar'}
+                    </Button>
+                ) : (
+                    <Button
+                        variant="custom"
+                        color="primary"
+                        size="xs"
+                        icon={<CheckCircle className="w-4 h-4" />}
+                        onClick={handleAprobar}
+                        disabled={loadingCambioEstado || loadingReactivacion}
+                    >
+                        {loadingCambioEstado ? 'Procesando...' : getTextoBotonAprobar(aplicacion.estadoKanban)}
+                    </Button>
+                )}
             </div>
         </div>
     )
@@ -411,6 +664,14 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                 checkboxes={finalizadaCheckboxes}
                 onCheckboxChange={setFinalizadaCheckboxes}
                 loading={loadingFinalizada}
+            />
+
+            {/* Modal de historial de aplicación */}
+            <HistorialAplicacionModal
+                isOpen={showHistorialModal}
+                onClose={() => setShowHistorialModal(false)}
+                aplicacionId={aplicacion.id}
+                candidatoNombre={nombreCompleto}
             />
         </>
     )

@@ -8,7 +8,9 @@ export {
 // Aplicacion mutations
 export {
   CREAR_APLICACION_MUTATION,
-  CAMBIAR_ESTADO_KANBAN_MUTATION
+  CAMBIAR_ESTADO_KANBAN_MUTATION,
+  REACTIVAR_APLICACION_MUTATION,
+  ACTUALIZAR_APLICACION_MUTATION
 } from './aplicacion.mutations';
 
 // Entrevista de llamada mutations

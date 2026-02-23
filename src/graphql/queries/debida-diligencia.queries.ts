@@ -20,7 +20,6 @@ export const OBTENER_DEBIDA_DILIGENCIA_QUERY = `
       controles {
         criterio
         responsable
-        nombre_responsable
         fecha_limite
       }
       created_at
@@ -47,7 +46,6 @@ export const OBTENER_DEBIDA_DILIGENCIA_POR_APLICACION_QUERY = `
       controles {
         criterio
         responsable
-        nombre_responsable
         fecha_limite
       }
       created_at
@@ -80,7 +78,6 @@ export const LISTAR_DEBIDAS_DILIGENCIAS_QUERY = `
       controles {
         criterio
         responsable
-        nombre_responsable
         fecha_limite
       }
       created_at

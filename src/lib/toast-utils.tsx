@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast'
+import { CheckCircle, XCircle, Info, AlertTriangle } from 'lucide-react'
 
 /**
  * 🎯 UTILIDADES PARA TOASTS - Sistema de notificaciones con duraciones configurables
@@ -17,7 +18,7 @@ export interface ToastOptions {
  * @param options - Opciones (opcional: duration en ms)
  */
 export function showSuccess(message: string, options?: ToastOptions) {
-  return toast.success(message, options)
+  return toast.success(message, { ...options, icon: <CheckCircle size={20} className="text-green-500" />, style: { background: '#f0fdf4', border: 'none', fontSize: '0.75rem', color: '#1f2937' } })
 }
 
 /**
@@ -26,7 +27,7 @@ export function showSuccess(message: string, options?: ToastOptions) {
  * @param options - Opciones (opcional: duration en ms)
  */
 export function showError(message: string, options?: ToastOptions) {
-  return toast.error(message, options)
+  return toast.error(message, { ...options, icon: <XCircle size={20} className="text-red-500" />, style: { background: '#fef2f2', border: 'none', fontSize: '0.75rem', color: '#1f2937' } })
 }
 
 /**
@@ -37,7 +38,8 @@ export function showError(message: string, options?: ToastOptions) {
 export function showInfo(message: string, options?: ToastOptions) {
   return toast(message, {
     ...options,
-    icon: 'ℹ️',
+    icon: <Info size={20} className="text-blue-500" />,
+    style: { background: '#eff6ff', border: 'none', fontSize: '0.75rem', color: '#1f2937' },
   })
 }
 
@@ -49,7 +51,8 @@ export function showInfo(message: string, options?: ToastOptions) {
 export function showWarning(message: string, options?: ToastOptions) {
   return toast(message, {
     ...options,
-    icon: '⚠️',
+    icon: <AlertTriangle size={20} className="text-yellow-500" />,
+    style: { background: '#fffbeb', border: 'none', fontSize: '0.75rem', color: '#1f2937' },
   })
 }
 
@@ -59,7 +62,7 @@ export function showWarning(message: string, options?: ToastOptions) {
  * @param options - Opciones (opcional: duration en ms)
  */
 export function showLoading(message: string, options?: ToastOptions) {
-  return toast.loading(message, options)
+  return toast.loading(message, { ...options, style: { fontSize: '0.75rem', color: '#1f2937' } })
 }
 
 /**
@@ -72,6 +75,8 @@ export function updateToast(toastId: string, message: string, options?: ToastOpt
   return toast.success(message, {
     ...options,
     id: toastId,
+    icon: <CheckCircle size={20} className="text-green-500" />,
+    style: { background: '#f0fdf4', border: 'none', fontSize: '0.75rem', color: '#1f2937' },
   })
 }
 
