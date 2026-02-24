@@ -45,6 +45,8 @@ export {
 export {
   useCambiarEstadoKanban,
   useReactivarAplicacion,
+  useAplicacionesPorCandidato,
+  useTodasAplicacionesPorCandidato,
   type AplicacionBasica,
 } from './useAplicaciones';
 

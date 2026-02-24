@@ -20,10 +20,15 @@ export default function ConvocatoriasPage() {
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [existingFormConfig, setExistingFormConfig] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const limit = 10;
+  const offset = (currentPage - 1) * limit;
 
   // Hook para obtener convocatorias del backend
-  const { convocatorias, loading, error, refetch } = useConvocatorias({
-    limit: 50, // Obtener más datos para tener disponibles para paginación
+  const { convocatorias, loading, error, refetch, totalCount } = useConvocatorias({
+    limit,
+    offset,
     enabled: true
   });
 
@@ -36,10 +41,6 @@ export default function ConvocatoriasPage() {
     setSearchQuery('');
   };
 
-  const handleAgregarConvocatoria = () => {
-    // TODO: Implementar funcionalidad para agregar convocatoria
-    console.log('Agregar convocatoria');
-  };
 
   const handleViewConvocatoria = (convocatoria: Convocatoria) => {
     setSelectedConvocatoria(convocatoria);
@@ -160,7 +161,7 @@ export default function ConvocatoriasPage() {
       header: 'Código',
       className: 'text-left',
       render: (value: string) => (
-        <span className="text-xs bg-gray-500/60 text-white dark:bg-gray-300/60 dark:text-black/80 p-1 rounded">
+        <span className="text-xs bg-gray-300/20 dark:bg-blue-100/20 text-gray-500 dark:text-gray-200 px-2 py-1 rounded">
           {value}
         </span>
       )
@@ -180,7 +181,7 @@ export default function ConvocatoriasPage() {
 
         return (
           <div className="min-w-0 max-w-full">
-            <div className="font-medium text-sm leading-none truncate">
+            <div className="font-medium text-xs leading-none truncate">
               {displayLines[0]}
             </div>
             {displayLines[1] && (
@@ -216,7 +217,7 @@ export default function ConvocatoriasPage() {
       key: 'vacantes',
       header: 'Vacantes',
       render: (value: number) => (
-        <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+        <span className="text-xs bg-blue-300/20 dark:bg-blue-100/20 text-blue-400 dark:text-blue-200 px-2 py-1 rounded">
           {value}
         </span>
       )
@@ -225,13 +226,21 @@ export default function ConvocatoriasPage() {
       key: 'empresa_nombre',
       header: 'Empresa',
       className: 'text-left text-xs',
-      render: (value: string) => value || 'No especificada'
+      render: (value: string) => (
+        <div className="line-clamp-2">
+          {value || 'No especificada'}
+        </div>
+      )
     },
     {
       key: 'obra_nombre',
       header: 'Obra/Proyecto',
       className: 'text-left text-xs',
-      render: (value: string) => value || 'No especificada'
+      render: (value: string) => (
+        <div className="line-clamp-2">
+          {value || 'No especificada'}
+        </div>
+      )
     },
     {
       key: 'fecha_creacion',
@@ -304,14 +313,6 @@ export default function ConvocatoriasPage() {
             Gestión de todos los proyectos con convocatorias
           </p>
         </div>
-        <Button
-          onClick={handleAgregarConvocatoria}
-          variant="custom"
-          color="violet"
-          icon={<Plus className="h-4 w-4" />}
-        >
-          Agregar Convocatoria
-        </Button>
       </div>
 
       {/* Barra de búsqueda */}
@@ -344,34 +345,21 @@ export default function ConvocatoriasPage() {
       </div>
 
       {/* Tabla de Convocatorias */}
-      {loading ? (
-        <div className="bg-background backdrop-blur-sm rounded-lg card-shadow p-12 text-center">
-          <LoadingSpinner size={60} showText={true} text="Cargando convocatorias..." />
-        </div>
-      ) : error ? (
-        <div className="bg-background backdrop-blur-sm rounded-lg card-shadow p-12 text-center">
-          <p className="text-sm text-red-600 mb-4">
-            Error al cargar convocatorias: {error.message}
-          </p>
-          <Button
-            variant="custom"
-            color="blue"
-            onClick={() => refetch()}
-          >
-            Reintentar
-          </Button>
-        </div>
-      ) : (
-        <DataTable
-          data={convocatorias}
-          columns={columns}
-          subtitle={`Total: ${convocatorias.length} convocatorias`}
-          showPagination={true}
-          fixedRows={10}
-          statusConfig={statusConfig}
-          emptyMessage="Las convocatorias aparecerán aquí cuando se agreguen"
-        />
-      )}
+      <DataTable
+        data={convocatorias}
+        columns={columns}
+        subtitle={`Total: ${totalCount} convocatorias`}
+        showPagination={true}
+        serverPagination={{
+          currentPage,
+          totalPages: Math.ceil(totalCount / limit),
+          totalCount,
+          onPageChange: (page: number) => setCurrentPage(page)
+        }}
+        statusConfig={statusConfig}
+        loading={loading}
+        emptyMessage="Las convocatorias aparecerán aquí cuando se agreguen"
+      />
 
       {/* Espacio adicional abajo como mencionó el usuario */}
       <div className="space-y-3 mt-8">

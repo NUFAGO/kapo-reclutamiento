@@ -23,6 +23,7 @@ interface SegundoEntrevistaTabProps {
     loadingUsuarios?: boolean
     loadingEntrevista?: boolean
     onValidationChange?: (isValid: boolean) => void
+    viewOnly?: boolean
 }
 
 interface FormData {
@@ -32,7 +33,7 @@ interface FormData {
     entrevistadorId: string
 }
 
-export function SegundoEntrevistaTab({ aplicacion, onValidationChange }: SegundoEntrevistaTabProps) {
+export function SegundoEntrevistaTab({ aplicacion, onValidationChange, viewOnly = false }: SegundoEntrevistaTabProps) {
     const { user } = useAuth()
 
     // Cargar usuarios inicialmente para el SelectSearch
@@ -210,7 +211,7 @@ export function SegundoEntrevistaTab({ aplicacion, onValidationChange }: Segundo
                         onChange={(value) => handleInputChange('entrevistadorId', value || '')}
                         placeholder="Seleccionar entrevistador..."
                         className="h-8 text-xs"
-                        disabled={!isEditMode && !!entrevista}
+                        disabled={viewOnly || (!isEditMode && !!entrevista)}
                         showSearchIcon={true}
                         onSearch={async (searchTerm) => {
                             const response = await graphqlRequest<{
@@ -242,7 +243,7 @@ export function SegundoEntrevistaTab({ aplicacion, onValidationChange }: Segundo
                         className="h-8 text-xs"
                         value={formData.fecha}
                         onChange={(e) => handleInputChange('fecha', e.target.value)}
-                        readOnly={!isEditMode && !!entrevista}
+                        readOnly={viewOnly || (!isEditMode && !!entrevista)}
                     />
                 </div>
 
@@ -256,7 +257,7 @@ export function SegundoEntrevistaTab({ aplicacion, onValidationChange }: Segundo
                         className="h-8 text-xs"
                         value={formData.hora}
                         onChange={(e) => handleInputChange('hora', e.target.value)}
-                        readOnly={!isEditMode && !!entrevista}
+                        readOnly={viewOnly || (!isEditMode && !!entrevista)}
                     />
                 </div>
 
@@ -271,21 +272,22 @@ export function SegundoEntrevistaTab({ aplicacion, onValidationChange }: Segundo
                         className="h-8 text-xs"
                         value={formData.correo}
                         onChange={(e) => handleInputChange('correo', e.target.value)}
-                        readOnly={!isEditMode && !!entrevista}
+                        readOnly={viewOnly || (!isEditMode && !!entrevista)}
                     />
                 </div>
             </div>
         </section>
     )
 
-    return (
-        <div className="space-y-6">
-            {/* Segunda Entrevista */}
-            <div className="max-w-md mx-auto">
-                {renderEntrevistaSection('Segunda Entrevista')}
-            </div>
+return (
+    <div className="space-y-6">
+        {/* Segunda Entrevista */}
+        <div className="max-w-md mx-auto">
+            {renderEntrevistaSection('Segunda Entrevista')}
+        </div>
 
-            {/* Botones de acción */}
+        {/* Botones de acción */}
+        {!viewOnly && (
             <section>
                 <div className="flex items-center justify-center gap-3">
                     {isEditMode ? (
@@ -324,6 +326,6 @@ export function SegundoEntrevistaTab({ aplicacion, onValidationChange }: Segundo
                     )}
                 </div>
             </section>
-        </div>
-    )
-}
+        )}
+    </div>
+)}

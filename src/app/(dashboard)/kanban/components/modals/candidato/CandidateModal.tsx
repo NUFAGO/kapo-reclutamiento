@@ -3,6 +3,18 @@ import { Modal, NotificationModal, Button, type CheckboxOption } from '@/compone
 import { SelectSearch } from '@/components/ui/select-search'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { KANBAN_ESTADOS, type EstadoKanban, ESTADO_LABELS } from '@/app/(dashboard)/kanban/lib/kanban.constants'
+
+// Estados archivados que necesitan consultar el historial para determinar el estado efectivo
+const ESTADOS_ARCHIVADOS = [
+    KANBAN_ESTADOS.RECHAZADO_POR_CANDIDATO,
+    KANBAN_ESTADOS.DESCARTADO,
+    KANBAN_ESTADOS.POSIBLES_CANDIDATOS
+] as const
+
+// Función helper para verificar si un estado está archivado
+const esEstadoArchivado = (estado: EstadoKanban): boolean => {
+    return ESTADOS_ARCHIVADOS.includes(estado as any)
+}
 import { RecepcionCVTab } from './tabs/RecepcionCVTab'
 import { LlamadaTab } from './tabs/LlamadaTab'
 import { PrimeraEntrevistaTab } from './tabs/PrimeraEntrevistaTab'
@@ -17,6 +29,7 @@ import { getTabColorStyles } from '@/app/(dashboard)/kanban/utils/colors'
 import { useMutation } from '@tanstack/react-query'
 import { graphqlRequest } from '@/lib/graphql-client'
 import { CREAR_COMUNICACION_ENTRADA_MUTATION, ACTUALIZAR_APLICACION_MUTATION } from '@/graphql/mutations'
+import { OBTENER_HISTORIAL_APLICACION_QUERY, OBTENER_ULTIMO_HISTORIAL_POR_APLICACION_QUERY } from '@/graphql/queries'
 import HistorialAplicacionModal from './HistorialAplicacionModal'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -26,6 +39,7 @@ interface CandidateModalProps {
     aplicacion: AplicacionCandidato
     headerBackground?: string
     onAplicacionStateChanged?: (aplicacionId: string, newEstado: EstadoKanban) => void
+    viewOnly?: boolean
 }
 
 // Configuración de tabs según el estado
@@ -90,7 +104,7 @@ const getSolidColorFromGradient = (gradient: string): string => {
     return 'var(--primary-color)';
 };
 
-export default function CandidateModal({ isOpen, onClose, aplicacion, headerBackground, onAplicacionStateChanged }: CandidateModalProps) {
+export default function CandidateModal({ isOpen, onClose, aplicacion, headerBackground, onAplicacionStateChanged, viewOnly = false }: CandidateModalProps) {
     const [activeTab, setActiveTab] = useState(() => {
         const initialTab = getInitialTab(aplicacion.estadoKanban);
         return initialTab;
@@ -102,6 +116,10 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     const [showHistorialModal, setShowHistorialModal] = useState(false)
     const [showExchangeButtons, setShowExchangeButtons] = useState(false)
     const [selectedConvocatoriaId, setSelectedConvocatoriaId] = useState<string>('')
+
+    // State for effective state (for discarded applications, use previous state)
+    const [effectiveState, setEffectiveState] = useState(aplicacion.estadoKanban)
+    const [loadingEffectiveState, setLoadingEffectiveState] = useState(false)
 
     // Checkboxes for finalizada confirmation
     const [finalizadaCheckboxes, setFinalizadaCheckboxes] = useState<CheckboxOption[]>([
@@ -117,12 +135,38 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
 
     // Actualizar el tab activo cuando cambie la aplicación
     React.useEffect(() => {
-        const newTab = getInitialTab(aplicacion.estadoKanban);
+        const newTab = getInitialTab(effectiveState);
         setActiveTab(newTab);
         setTabValidations({});
         // Resetear estado de cambio de convocatoria cuando cambie la aplicación
         setShowExchangeButtons(false);
         setSelectedConvocatoriaId('');
+    }, [aplicacion.id, aplicacion.estadoKanban, effectiveState])
+
+    // Fetch effective state for archived applications
+    React.useEffect(() => {
+        if (esEstadoArchivado(aplicacion.estadoKanban) && aplicacion.candidato) {
+            setLoadingEffectiveState(true)
+            graphqlRequest<{ obtenerUltimoHistorialPorAplicacion: any }>(OBTENER_ULTIMO_HISTORIAL_POR_APLICACION_QUERY, { aplicacionId: aplicacion.id })
+                .then(response => {
+                    const historial = response.obtenerUltimoHistorialPorAplicacion
+                    if (historial) {
+                        setEffectiveState(historial.estadoAnterior)
+                    } else {
+                        setEffectiveState(aplicacion.estadoKanban)
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching historial:', error)
+                    setEffectiveState(aplicacion.estadoKanban)
+                })
+                .finally(() => {
+                    setLoadingEffectiveState(false)
+                })
+        } else {
+            setEffectiveState(aplicacion.estadoKanban)
+            setLoadingEffectiveState(false)
+        }
     }, [aplicacion.id, aplicacion.estadoKanban])
 
     // Resetear estado cuando se abre/cierra el modal
@@ -135,6 +179,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
             setShowFinalizadaModal(false);
             setShowHistorialModal(false);
             setLoadingFinalizada(false);
+            setLoadingEffectiveState(false);
             setTabValidations({});
             setFinalizadaCheckboxes([
                 { id: 'llamadaConfirmada', label: 'Llamada Confirmada', checked: false },
@@ -438,7 +483,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
         ? `${aplicacion.candidato.nombres} ${aplicacion.candidato.apellidoPaterno} ${aplicacion.candidato.apellidoMaterno}`.trim()
         : 'Candidato'
 
-    const tabs = getTabsForEstado(aplicacion.estadoKanban)
+    const tabs = loadingEffectiveState ? [] : getTabsForEstado(effectiveState)
 
     // Renderizar contenido del tab activo
     const renderTabContent = () => {
@@ -446,19 +491,21 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
             setTabValidations(prev => ({ ...prev, [activeTab]: isValid }))
         }
 
+        const tabViewOnly = viewOnly || isArchived
+
         switch (activeTab) {
             case 'recepcion':
-                return <RecepcionCVTab aplicacion={aplicacion} onValidationChange={validationCallback} />
+                return <RecepcionCVTab aplicacion={aplicacion} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
             case 'llamada':
-                return <LlamadaTab aplicacion={aplicacion} onValidationChange={validationCallback} />
+                return <LlamadaTab aplicacion={aplicacion} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
             case 'entrevista1':
-                return <PrimeraEntrevistaTab aplicacion={aplicacion} onValidationChange={validationCallback} />
+                return <PrimeraEntrevistaTab aplicacion={aplicacion} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
             case 'entrevista2':
-                return <SegundoEntrevistaTab aplicacion={aplicacion} onValidationChange={validationCallback} />
+                return <SegundoEntrevistaTab aplicacion={aplicacion} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
             case 'referencias':
-                return <ReferenciaTab aplicacion={aplicacion} onValidationChange={validationCallback} />
+                return <ReferenciaTab aplicacion={aplicacion} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
             case 'documentos':
-                return <EvaluacionTab aplicacion={aplicacion} onValidationChange={validationCallback} />
+                return <EvaluacionTab aplicacion={aplicacion} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
             case 'aprobacion':
                 return <div className="p-4 text-center" style={{ color: 'var(--text-secondary)' }}>Tab de Aprobación (próximamente)</div>
             default:
@@ -478,7 +525,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                     </h2>
 
                     <div className='flex items-center gap-1'>
-                        {!showExchangeButtons ? (
+                        {!showExchangeButtons || viewOnly ? (
                             <p className="text-xs text-left w-full" style={{ color: 'var(--text-secondary)' }}>
                                 {aplicacion.convocatoria?.cargoNombre || 'Sin cargo'} {aplicacion.convocatoria?.especialidad_nombre ? `(${aplicacion.convocatoria.especialidad_nombre})` : ''}
                             </p>
@@ -500,7 +547,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                                 />
                             </div>
                         )}
-                        {!showExchangeButtons ? (
+                        {!viewOnly && !showExchangeButtons ? (
                             <button 
                                 className='rounded-[5px] bg-gray-300/20 dark:bg-gray-100/10 hover:bg-gray-50/30 dark:hover:bg-gray-300/20'
                                 onClick={handleToggleExchangeButtons}
@@ -508,7 +555,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                             >
                                 <CgArrowsExchange className="size-5" />
                             </button>
-                        ) : (
+                        ) : !viewOnly && showExchangeButtons ? (
                             <div className="flex items-center gap-1">
                                 <button 
                                     className='rounded-[5px] bg-green-500/20 hover:bg-green-600/40 text-green-600'
@@ -525,18 +572,19 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                                     <X className="size-4" />
                                 </button>
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </div>
 
-            <button
-                className=' p-1.5 rounded-full mr-3 bg-gray-300/50 dark:bg-gray-100/10 hover:bg-gray-50/30 dark:hover:bg-gray-300/20'
-                onClick={() => setShowHistorialModal(true)}
-                title="Ver historial de cambios"
-            >
-                <History className='size-4' />
-            </button>
+                <button
+                    className=' p-1.5 rounded-full mr-3 bg-gray-300/50 dark:bg-gray-100/10 hover:bg-gray-50/30 dark:hover:bg-gray-300/20'
+                    onClick={() => setShowHistorialModal(true)}
+                    title="Ver historial de cambios"
+                >
+                    <History className='size-4' />
+                </button>
+
         </div>
     )
 
@@ -553,6 +601,8 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     const mostrarBotonReactivar = aplicacion.estadoKanban === KANBAN_ESTADOS.RECHAZADO_POR_CANDIDATO ||
         aplicacion.estadoKanban === KANBAN_ESTADOS.DESCARTADO ||
         aplicacion.estadoKanban === KANBAN_ESTADOS.POSIBLES_CANDIDATOS
+
+    const isArchived = mostrarBotonReactivar
 
     const modalFooter = (
         <div className="flex items-center justify-between px-4">
@@ -604,34 +654,54 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                 onClose={onClose}
                 title={modalTitle}
                 size="lg-tall"
-                footer={modalFooter}
+                footer={(viewOnly && !isArchived) ? undefined : modalFooter}
                 headerBackground={headerBackground}
             >
                 {/* Tabs */}
                 <div className="border-b mb-6 -mt-4" style={{ borderColor: 'var(--border-color)' }}>
-                    <div className="flex gap-1 overflow-x-auto">
-                        {tabs.map((tab) => {
-                            const Icon = tab.icon
-                            const isActive = activeTab === tab.id
+                    {loadingEffectiveState ? (
+                        <div className="flex gap-1 overflow-x-auto">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="flex items-center gap-1.5 px-3 py-3 text-xs border-b-2 animate-pulse">
+                                    <div className="w-3.5 h-3.5 bg-gray-300 rounded"></div>
+                                    <div className="h-3 w-16 bg-gray-300 rounded"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex gap-1 overflow-x-auto">
+                            {tabs.map((tab) => {
+                                const Icon = tab.icon
+                                const isActive = activeTab === tab.id
 
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className="flex items-center gap-1.5 px-3 py-3 text-xs transition-colors border-b-2 hover:bg-gray-50/50"
-                                    style={getTabColorStyles(aplicacion.convocatoriaId, isActive)}
-                                >
-                                    <Icon className="w-3.5 h-3.5" />
-                                    {tab.label}
-                                </button>
-                            )
-                        })}
-                    </div>
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className="flex items-center gap-1.5 px-3 py-3 text-xs transition-colors border-b-2 hover:bg-gray-50/50"
+                                        style={getTabColorStyles(aplicacion.convocatoriaId, isActive)}
+                                    >
+                                        <Icon className="w-3.5 h-3.5" />
+                                        {tab.label}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
 
                 {/* Contenido del tab activo */}
                 <div className="min-h-100">
-                    {renderTabContent()}
+                    {loadingEffectiveState ? (
+                        <div className="flex items-center justify-center py-8">
+                            <div className="animate-pulse text-center">
+                                <div className="h-4 w-32 bg-gray-300 rounded mx-auto mb-2"></div>
+                                <div className="h-3 w-48 bg-gray-300 rounded mx-auto"></div>
+                            </div>
+                        </div>
+                    ) : (
+                        renderTabContent()
+                    )}
                 </div>
             </Modal>
 

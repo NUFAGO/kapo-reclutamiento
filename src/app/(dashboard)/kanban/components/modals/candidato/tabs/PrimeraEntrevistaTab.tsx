@@ -22,6 +22,7 @@ interface PrimeraEntrevistaTabProps {
     loadingUsuarios?: boolean
     loadingEntrevista?: boolean
     onValidationChange?: (isValid: boolean) => void
+    viewOnly?: boolean
 }
 
 interface FormData {
@@ -31,7 +32,7 @@ interface FormData {
     entrevistadorId: string
 }
 
-export function PrimeraEntrevistaTab({ aplicacion, onValidationChange }: PrimeraEntrevistaTabProps) {
+export function PrimeraEntrevistaTab({ aplicacion, onValidationChange, viewOnly = false }: PrimeraEntrevistaTabProps) {
     const { user } = useAuth()
 
     // Cargar usuarios inicialmente para el SelectSearch
@@ -285,44 +286,46 @@ export function PrimeraEntrevistaTab({ aplicacion, onValidationChange }: Primera
             </div>
 
             {/* Botones de acción */}
-            <section>
-                <div className="flex items-center justify-center gap-3">
-                    {isEditMode ? (
-                        <>
-                            <Button
-                                variant="outline"
-                                size="xs"
-                                color='green'
-                                onClick={handleCancelEdit}
-                                disabled={loading}
-                            >
-                                Cancelar
-                            </Button>
+            {!viewOnly && (
+                <section>
+                    <div className="flex items-center justify-center gap-3">
+                        {isEditMode ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="xs"
+                                    color='green'
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    variant="custom"
+                                    color="primary"
+                                    size="xs"
+                                    icon={<Save className="w-4 h-4" />}
+                                    onClick={handleSave}
+                                    disabled={loading || !hasChanges}
+                                >
+                                    {loading ? 'Guardando...' : 'Guardar'}
+                                </Button>
+                            </>
+                        ) : (
                             <Button
                                 variant="custom"
                                 color="primary"
                                 size="xs"
-                                icon={<Save className="w-4 h-4" />}
-                                onClick={handleSave}
-                                disabled={loading || !hasChanges}
+                                icon={entrevista ? <Edit className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                                onClick={entrevista ? handleEditMode : handleSave}
+                                disabled={loading}
                             >
-                                {loading ? 'Guardando...' : 'Guardar'}
+                                {loading ? 'Cargando...' : (entrevista ? 'Editar' : 'Guardar')}
                             </Button>
-                        </>
-                    ) : (
-                        <Button
-                            variant="custom"
-                            color="primary"
-                            size="xs"
-                            icon={entrevista ? <Edit className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                            onClick={entrevista ? handleEditMode : handleSave}
-                            disabled={loading}
-                        >
-                            {loading ? 'Cargando...' : (entrevista ? 'Editar' : 'Guardar')}
-                        </Button>
-                    )}
-                </div>
-            </section>
+                        )}
+                    </div>
+                </section>
+            )}
         </div>
     )
 }

@@ -11,7 +11,8 @@ import {
   LogOut,
   X,
   Kanban,
-  Briefcase
+  Briefcase,
+  Users
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useState, useEffect } from 'react';
@@ -32,6 +33,11 @@ const navItems = [
     name: 'Convocatorias',
     href: '/convocatorias',
     icon: Briefcase,
+  },
+  {
+    name: 'Candidatos',
+    href: '/candidatos',
+    icon: Users,
   }
 ];
 
@@ -103,7 +109,7 @@ export function Sidebar() {
               )}>
                 <Image
                   src="/logo-negativo.webp"
-                  alt="Activos Fijos Logo"
+                  alt="kapo Reclutamiento Logo"
                   width={40}
                   height={40}
                   className="h-10 w-10 object-contain"
@@ -120,7 +126,7 @@ export function Sidebar() {
                 )}>
                   <Image
                     src="/logo-negativo.webp"
-                    alt="Activos Fijos Logo"
+                    alt="Kapo Reclutamiento Logo"
                     width={100}
                     height={35}
                     className="h-8 w-auto object-contain "
@@ -133,7 +139,7 @@ export function Sidebar() {
                     ? "text-text-secondary"
                     : "text-gray-700"
                 )}>
-                  Activos Fijos
+                  Reclutamiento
                 </span>
               </>
             )}

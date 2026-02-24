@@ -48,7 +48,7 @@ export interface UseConvocatoriasReturn {
   loading: boolean
   error: any
   refetch: () => void
-  totalCount?: number
+  totalCount: number
 }
 
 /**
@@ -61,7 +61,10 @@ export function useConvocatorias(options: UseConvocatoriasOptions = {}): UseConv
     queryKey: ['convocatorias', { limit, offset }],
     queryFn: async () => {
       const response = await graphqlRequest<{
-        convocatorias: Convocatoria[]
+        convocatorias: {
+          convocatorias: Convocatoria[]
+          totalCount: number
+        }
       }>(GET_CONVOCATORIAS_QUERY, { limit, offset })
       return response
     },
@@ -71,12 +74,11 @@ export function useConvocatorias(options: UseConvocatoriasOptions = {}): UseConv
   })
 
   return {
-    convocatorias: data?.convocatorias || [],
+    convocatorias: data?.convocatorias.convocatorias || [],
     loading: isLoading,
     error,
     refetch,
-    // Nota: El backend debería devolver totalCount para paginación completa
-    // totalCount: data?.convocatorias?.totalCount,
+    totalCount: data?.convocatorias.totalCount || 0,
   }
 }
 

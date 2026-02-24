@@ -85,15 +85,8 @@ const HistorialAplicacionModal: React.FC<HistorialAplicacionModalProps> = ({
             onClose={onClose}
             title={`Historial de ${candidatoNombre}`}
             size="lg-tall"
-            footer={
-                <div className="flex justify-end">
-                    <Button onClick={onClose} variant="outline">
-                        Cerrar
-                    </Button>
-                </div>
-            }
         >
-            <div className="space-y-4 h-full">
+            <div className="p-4 h-full">
                 {isLoading && (
                     <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />

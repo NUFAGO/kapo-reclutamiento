@@ -18,9 +18,10 @@ import { pdf } from '@react-pdf/renderer'
 interface EvaluacionTabProps {
     aplicacion: AplicacionCandidato
     onValidationChange?: (isValid: boolean) => void
+    viewOnly?: boolean
 }
 
-export function EvaluacionTab({ aplicacion, onValidationChange }: EvaluacionTabProps) {
+export function EvaluacionTab({ aplicacion, onValidationChange, viewOnly = false }: EvaluacionTabProps) {
     const nombreCompleto = aplicacion.candidato
         ? `${aplicacion.candidato.nombres} ${aplicacion.candidato.apellidoPaterno} ${aplicacion.candidato.apellidoMaterno}`.trim()
         : 'Candidato'
@@ -957,44 +958,46 @@ export function EvaluacionTab({ aplicacion, onValidationChange }: EvaluacionTabP
             )}
 
             {/* Botones de acción */}
-            <section>
-                <div className="flex items-center justify-center gap-3">
-                    {isEditMode ? (
-                        <>
-                            <Button
-                                variant="outline"
-                                size="xs"
-                                color='green'
-                                onClick={handleCancelEdit}
-                                disabled={loadingCrear || loadingActualizar || loadingDebidaDiligencia}
-                            >
-                                Cancelar
-                            </Button>
+            {!viewOnly && (
+                <section className="flex items-center justify-center gap-3 mt-6">
+                    <div className="flex items-center justify-center gap-3">
+                        {isEditMode ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="xs"
+                                    color='green'
+                                    onClick={handleCancelEdit}
+                                    disabled={loadingCrear || loadingActualizar || loadingDebidaDiligencia}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    variant="custom"
+                                    color="primary"
+                                    size="xs"
+                                    icon={<Save className="w-4 h-4" />}
+                                    onClick={handleSave}
+                                    disabled={loadingCrear || loadingActualizar || loadingDebidaDiligencia || !hasChanges}
+                                >
+                                    {loadingCrear || loadingActualizar ? 'Guardando...' : 'Guardar'}
+                                </Button>
+                            </>
+                        ) : (
                             <Button
                                 variant="custom"
                                 color="primary"
                                 size="xs"
-                                icon={<Save className="w-4 h-4" />}
-                                onClick={handleSave}
-                                disabled={loadingCrear || loadingActualizar || loadingDebidaDiligencia || !hasChanges}
+                                icon={existingDebidaDiligencia ? <Edit className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                                onClick={existingDebidaDiligencia ? handleEditMode : handleSave}
+                                disabled={loadingCrear || loadingActualizar || loadingDebidaDiligencia}
                             >
-                                {loadingCrear || loadingActualizar ? 'Guardando...' : 'Guardar'}
+                                {loadingCrear || loadingActualizar || loadingDebidaDiligencia ? 'Cargando...' : (existingDebidaDiligencia ? 'Editar' : 'Crear Evaluación')}
                             </Button>
-                        </>
-                    ) : (
-                        <Button
-                            variant="custom"
-                            color="primary"
-                            size="xs"
-                            icon={existingDebidaDiligencia ? <Edit className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                            onClick={existingDebidaDiligencia ? handleEditMode : handleSave}
-                            disabled={loadingCrear || loadingActualizar || loadingDebidaDiligencia}
-                        >
-                            {loadingCrear || loadingActualizar || loadingDebidaDiligencia ? 'Cargando...' : (existingDebidaDiligencia ? 'Editar' : 'Crear Evaluación')}
-                        </Button>
-                    )}
-                </div>
-            </section>
+                        )}
+                    </div>
+                </section>
+            )}
 
             {/* Modal del PDF */}
             <Modal

@@ -13,9 +13,10 @@ import Modal from '@/components/ui/modal'
 interface RecepcionCVTabProps {
     aplicacion: AplicacionCandidato
     onValidationChange?: (isValid: boolean) => void
+    viewOnly?: boolean
 }
 
-export function RecepcionCVTab({ aplicacion, onValidationChange }: RecepcionCVTabProps) {
+export function RecepcionCVTab({ aplicacion, onValidationChange, viewOnly = false }: RecepcionCVTabProps) {
     const { candidato, convocatoria, pretensionEconomica, aniosExperienciaPuesto, curriculumUrl } = aplicacion
     const [showCVModal, setShowCVModal] = useState(false)
 

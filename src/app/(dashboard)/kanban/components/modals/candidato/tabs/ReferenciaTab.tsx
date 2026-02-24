@@ -18,6 +18,7 @@ import toast from 'react-hot-toast'
 interface ReferenciaTabProps {
     aplicacion: AplicacionCandidato
     onValidationChange?: (isValid: boolean) => void
+    viewOnly?: boolean
 }
 
 interface FormData {
@@ -30,7 +31,7 @@ interface FormData {
     archivosurl: string[]
 }
 
-export function ReferenciaTab({ aplicacion, onValidationChange }: ReferenciaTabProps) {
+export function ReferenciaTab({ aplicacion, onValidationChange, viewOnly = false }: ReferenciaTabProps) {
     const { data: referencias, isLoading: loadingReferencias } = useReferenciasPorAplicacion(aplicacion.id)
     const { mutateAsync: crearReferencia, isPending: loadingCrear } = useCrearReferencia()
     const { mutateAsync: actualizarReferencia, isPending: loadingActualizar } = useActualizarReferencia()
@@ -451,36 +452,39 @@ export function ReferenciaTab({ aplicacion, onValidationChange }: ReferenciaTabP
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center justify-center gap-2 ">
-                {(referencias && referencias.length > 0) && (
+            {!viewOnly && (
+                <div className="flex items-center justify-center gap-2 ">
+                    {(referencias && referencias.length > 0) && (
+                        <Button
+                            variant="outline"
+                            size="xs"
+                            onClick={handleCancelEdit}
+                            disabled={loading}
+                        >
+                            Cancelar
+                        </Button>
+                    )}
                     <Button
-                        variant="outline"
+                        variant="custom"
+                        color="primary"
                         size="xs"
-                        onClick={handleCancelEdit}
-                        disabled={loading}
+                        icon={<Save className="w-3.5 h-3.5" />}
+                        onClick={handleSave}
+                        disabled={loading || (isEditMode && !hasChanges && !!editingReferencia) || (!editingReferencia && referencias && referencias.length >= 3)}
                     >
-                        Cancelar
+                        {loading ? 'Guardando...' : (editingReferencia ? 'Actualizar' : 'Guardar')}
                     </Button>
-                )}
-                <Button
-                    variant="custom"
-                    color="primary"
-                    size="xs"
-                    icon={<Save className="w-3.5 h-3.5" />}
-                    onClick={handleSave}
-                    disabled={loading || (isEditMode && !hasChanges && !!editingReferencia) || (!editingReferencia && referencias && referencias.length >= 3)}
-                >
-                    {loading ? 'Guardando...' : (editingReferencia ? 'Actualizar' : 'Guardar')}
-                </Button>
-            </div>
+                </div>
+            )}
         </div>
     </section>
-    )
+)
 
-    // ─── List View ───────────────────────────────────────────────────────────
-    const renderReferenciasList = () => (
-        <section>
-            <div className="space-y-4">
+// ─── List View ───────────────────────────────────────────────────────────
+const renderReferenciasList = () => (
+    <section>
+        <div className="space-y-4">
+            
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>

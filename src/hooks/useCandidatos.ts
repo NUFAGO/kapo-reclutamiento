@@ -18,8 +18,8 @@ export interface Candidato {
   curriculumUrl: string
   totalAplicaciones?: number
   aplicacionesGanadas?: number
-  fechaRegistro: Date
-  fechaActualizacion: Date
+  fechaRegistro?: string
+  fechaActualizacion?: string
 }
 
 export interface CandidatoFilterInput {
@@ -41,6 +41,7 @@ export interface UseCandidatosReturn {
   loading: boolean
   error: any
   refetch: () => void
+  totalCount: number
 }
 
 // Query para listar candidatos con filtros
@@ -132,7 +133,8 @@ export function useCandidatos(options: UseCandidatosOptions = {}): UseCandidatos
     candidatos: data?.candidatos || [],
     loading: isLoading,
     error,
-    refetch
+    refetch,
+    totalCount: data?.total || 0
   }
 }
 

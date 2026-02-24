@@ -78,6 +78,15 @@ export const OBTENER_ULTIMO_CAMBIO_ESTADO_QUERY = `
   ${HISTORIAL_CANDIDATO_FIELDS}
 `;
 
+export const OBTENER_ULTIMO_HISTORIAL_POR_APLICACION_QUERY = `
+  query ObtenerUltimoHistorialPorAplicacion($aplicacionId: ID!) {
+    obtenerUltimoHistorialPorAplicacion(aplicacionId: $aplicacionId) {
+      ...HistorialCandidatoFields
+    }
+  }
+  ${HISTORIAL_CANDIDATO_FIELDS}
+`;
+
 export const GENERAR_ESTADISTICAS_CONVERSION_QUERY = `
   query GenerarEstadisticasConversion(
     $convocatoriaId: ID
@@ -122,6 +131,10 @@ export type ListarHistorialQueryVariables = {
 };
 
 export type ObtenerUltimoCambioEstadoQueryVariables = {
+  aplicacionId: string;
+};
+
+export type ObtenerUltimoHistorialPorAplicacionQueryVariables = {
   aplicacionId: string;
 };
 

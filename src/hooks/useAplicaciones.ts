@@ -1,16 +1,13 @@
-/**
- * 🎣 USE APLICACIONES - Hook personalizado para gestión de aplicaciones de candidatos
- *
- * Responsabilidad: Manejar estado y operaciones de aplicaciones
- * Flujo: Importado por componentes → Conecta con GraphQL backend
- */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { graphqlRequest } from '@/lib/graphql-client'
 import { CAMBIAR_ESTADO_KANBAN_MUTATION, REACTIVAR_APLICACION_MUTATION } from '@/graphql/mutations'
 import { EstadoKanban, KANBAN_ESTADOS } from '@/app/(dashboard)/kanban/lib/kanban.constants'
 import { useAuth } from '@/context/auth-context'
 import { useRegistrarCambioHistorial, TipoCambioHistorial } from './useHistorialCandidato'
+import { OBTENER_APLICACIONES_POR_CANDIDATO_QUERY } from '@/graphql/queries/aplicacion.queries'
+import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 
 export interface AplicacionBasica {
   id: string
@@ -91,12 +88,13 @@ export function useCambiarEstadoKanban() {
 
       return response.cambiarEstadoKanban
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       // Invalidar queries relacionadas para refrescar datos
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['aplicaciones'] })
         queryClient.invalidateQueries({ queryKey: ['estadisticas-convocatoria'] })
         queryClient.invalidateQueries({ queryKey: ['historial'] }) // Invalidar cache del historial
+        queryClient.invalidateQueries({ queryKey: ['ultimo-historial-por-aplicacion', variables.id] })
       }, 0)
     },
   })
@@ -149,11 +147,12 @@ export function useReactivarAplicacion() {
 
       return response.reactivarAplicacion
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       // Invalidar queries relacionadas para refrescar datos
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['aplicaciones'] })
         queryClient.invalidateQueries({ queryKey: ['estadisticas-convocatoria'] })
+        queryClient.invalidateQueries({ queryKey: ['ultimo-historial-por-aplicacion', variables.id] })
       }, 0)
     },
   })
@@ -164,4 +163,36 @@ export function useReactivarAplicacion() {
     error: mutation.error,
     data: mutation.data,
   }
+}
+
+/**
+ * Hook para obtener aplicaciones por candidato
+ */
+export function useAplicacionesPorCandidato(candidatoId: string) {
+  return useQuery({
+    queryKey: ['aplicaciones-candidato', candidatoId],
+    queryFn: async () => {
+      const response = await graphqlRequest<{
+        obtenerAplicacionesPorCandidato: AplicacionCandidato[]
+      }>(OBTENER_APLICACIONES_POR_CANDIDATO_QUERY, { candidatoId })
+      return response.obtenerAplicacionesPorCandidato
+    },
+    enabled: !!candidatoId
+  })
+}
+
+/**
+ * Hook para obtener todas las aplicaciones por candidato (sin filtrar por estado de convocatoria)
+ */
+export function useTodasAplicacionesPorCandidato(candidatoId: string) {
+  return useQuery({
+    queryKey: ['todas-aplicaciones-candidato', candidatoId],
+    queryFn: async () => {
+      const response = await graphqlRequest<{
+        obtenerAplicacionesPorCandidato: AplicacionCandidato[]
+      }>(OBTENER_APLICACIONES_POR_CANDIDATO_QUERY, { candidatoId })
+      return response.obtenerAplicacionesPorCandidato
+    },
+    enabled: !!candidatoId
+  })
 }

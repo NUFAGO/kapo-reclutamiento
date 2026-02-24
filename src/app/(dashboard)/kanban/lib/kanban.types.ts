@@ -106,6 +106,8 @@ export interface KanbanColumnProps {
 
 export interface KanbanBoardProps {
   convocatoriaId?: string
+  candidatoId?: string
+  aplicacionId?: string
   onAplicacionClick?: (aplicacion: AplicacionCandidato, onMove?: (aplicacionId: string, newEstado: EstadoKanban) => void) => void
   viewMode?: 'main' | 'archived'
 }

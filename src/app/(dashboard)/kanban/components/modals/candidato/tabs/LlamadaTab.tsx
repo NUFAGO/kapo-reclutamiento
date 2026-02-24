@@ -17,9 +17,10 @@ import { pdf } from '@react-pdf/renderer'
 interface LlamadaTabProps {
     aplicacion: AplicacionCandidato
     onValidationChange?: (isValid: boolean) => void
+    viewOnly?: boolean
 }
 
-export function LlamadaTab({ aplicacion, onValidationChange }: LlamadaTabProps) {
+export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }: LlamadaTabProps) {
     // Hook para obtener información del usuario autenticado
     const { user } = useAuth()
 
@@ -818,44 +819,46 @@ export function LlamadaTab({ aplicacion, onValidationChange }: LlamadaTabProps) 
             </section>
 
             {/* Botones de acción */}
-            <section className="" >
-                <div className="flex items-center justify-center gap-3">
-                    {isEditMode ? (
-                        <>
-                            <Button
-                                variant="outline"
-                                size="xs"
-                                color='green'
-                                onClick={handleCancelEdit}
-                                disabled={loading}
-                            >
-                                Cancelar
-                            </Button>
+            {!viewOnly && (
+                <section className="" >
+                    <div className="flex items-center justify-center gap-3">
+                        {isEditMode ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="xs"
+                                    color='green'
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    variant="custom"
+                                    color="primary"
+                                    size="xs"
+                                    icon={<Save className="w-4 h-4" />}
+                                    onClick={handleSave}
+                                    disabled={loading || !hasChanges}
+                                >
+                                    {loading ? 'Guardando...' : 'Guardar'}
+                                </Button>
+                            </>
+                        ) : (
                             <Button
                                 variant="custom"
                                 color="primary"
                                 size="xs"
-                                icon={<Save className="w-4 h-4" />}
-                                onClick={handleSave}
-                                disabled={loading || !hasChanges}
+                                icon={entrevista ? <Edit className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                                onClick={entrevista ? handleEditMode : handleSave}
+                                disabled={loading}
                             >
-                                {loading ? 'Guardando...' : 'Guardar'}
+                                {loading ? 'Cargando...' : (entrevista ? 'Editar' : 'Guardar')}
                             </Button>
-                        </>
-                    ) : (
-                        <Button
-                            variant="custom"
-                            color="primary"
-                            size="xs"
-                            icon={entrevista ? <Edit className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                            onClick={entrevista ? handleEditMode : handleSave}
-                            disabled={loading}
-                        >
-                            {loading ? 'Cargando...' : (entrevista ? 'Editar' : 'Guardar')}
-                        </Button>
-                    )}
-                </div>
-            </section>
+                        )}
+                    </div>
+                </section>
+            )}
 
             {/* Modal del PDF */}
             <Modal
