@@ -5,6 +5,8 @@ import { useConvocatorias } from '@/hooks/useConvocatorias'
 import { PRIORIDAD_COLORES } from '../lib/kanban.constants'
 import { Button } from '@/components/ui/button'
 import { SelectSearch } from '@/components/ui/select-search'
+import { Select } from '@/components/ui'
+import type { SelectOption } from '@/components/ui'
 import { Badge } from '@/components/ui/badge'
 import { Filter, AlertTriangle, Users, CheckCircle, Clock, XCircle, Archive, Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -35,6 +37,7 @@ export function KanbanHeader({
 }: KanbanHeaderProps) {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [animating, setAnimating] = useState(false)
+  const [prioridadSeleccionada, setPrioridadSeleccionada] = useState('')
 
   useEffect(() => {
     setAnimating(true)
@@ -53,7 +56,7 @@ export function KanbanHeader({
         {/* Título y descripción */}
         <div className="flex-1">
           <h1 className="text-md font-bold" style={{ color: 'var(--text-on-content-bg-heading)' }}>Kanban de Candidatos</h1>
-          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-xs hidden sm:block" style={{ color: 'var(--text-secondary)' }}>
             Gestiona las aplicaciones por estado y sigue el proceso de selección
           </p>
         </div>
@@ -111,6 +114,19 @@ export function KanbanHeader({
                   value: convocatoria.id,
                   label: `${convocatoria.cargo_nombre || 'Sin cargo'} ${convocatoria.especialidad_nombre ? `(${convocatoria.especialidad_nombre})` : ''} - ${convocatoria.prioridad}`.trim()
                 }))
+              ]}
+            />
+          </div>
+
+          {/* Selector de prioridad */}
+          <div className="w-full sm:min-w-40">
+            <Select
+              value={prioridadSeleccionada}
+              onChange={(value) => setPrioridadSeleccionada(value || '')}
+              placeholder="Seleccionar prioridad"
+              options={[
+                { value: 'programable', label: 'Programable' },
+                { value: 'maximaprioridad', label: 'Máxima Prioridad' }
               ]}
             />
           </div>

@@ -9,6 +9,7 @@ export const CREAR_ENTREVISTA_REGULAR_MUTATION = `
       aplicacionCandidatoId
       candidatoId
       tipo_entrevista
+      modalidad
       fecha_entrevista
       hora_entrevista
       correo_contacto
@@ -29,6 +30,7 @@ export const ACTUALIZAR_ENTREVISTA_REGULAR_MUTATION = `
       aplicacionCandidatoId
       candidatoId
       tipo_entrevista
+      modalidad
       fecha_entrevista
       hora_entrevista
       correo_contacto

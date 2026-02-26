@@ -57,16 +57,8 @@ export function KanbanColumn({
     }
   }, [hasNextPage, loadingMore])
 
-  // Ordenar aplicaciones: el backend ya ordena por fechaAplicacion descendente,
-  // pero para posibles candidatos necesitamos ordenar por prioridad
-  const aplicacionesOrdenadas = estado === KANBAN_ESTADOS.POSIBLES_CANDIDATOS
-    ? [...aplicaciones].sort((a, b) => {
-        // Para posibles candidatos, ordenar por prioridad (1, 2, 3...)
-        const prioridadA = a.ordenPrioridad || 999
-        const prioridadB = b.ordenPrioridad || 999
-        return prioridadA - prioridadB
-      })
-    : aplicaciones // Para otros estados, usar el orden del backend (fechaAplicacion DESC)
+  // Las aplicaciones vienen ordenadas del backend por fechaAplicacion descendente
+  const aplicacionesOrdenadas = aplicaciones
 
   const estadoColor = ESTADO_COLORES[estado]
   const estadoLabel = ESTADO_LABELS[estado]

@@ -24,13 +24,13 @@ export function useCambiarEstadoKanban() {
 
   // Función auxiliar para determinar el tipo de cambio
   const determinarTipoCambio = (estadoAnterior: EstadoKanban, estadoNuevo: EstadoKanban): TipoCambioHistorial => {
-    // Aprobaciones
-    if (estadoAnterior === KANBAN_ESTADOS.CVS_RECIBIDOS && estadoNuevo === KANBAN_ESTADOS.POR_LLAMAR) {
+    // Aprobaciones específicas
+    if (estadoAnterior === KANBAN_ESTADOS.ENTREVISTA_PREVIA || estadoAnterior === KANBAN_ESTADOS.APROBACION_GERENCIA) {
       return 'APROBACION'
     }
 
     // Rechazos
-    if (estadoNuevo === 'DESCARTADO' as EstadoKanban || estadoNuevo === 'RECHAZADO_POR_CANDIDATO' as EstadoKanban) {
+    if (estadoNuevo === 'DESCARTADO' as EstadoKanban || estadoNuevo === 'RECHAZADO_POR_CANDIDATO' as EstadoKanban || estadoNuevo === 'POSIBLES_CANDIDATOS' as EstadoKanban) {
       return 'RECHAZO'
     }
 
@@ -152,6 +152,7 @@ export function useReactivarAplicacion() {
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['aplicaciones'] })
         queryClient.invalidateQueries({ queryKey: ['estadisticas-convocatoria'] })
+        queryClient.invalidateQueries({ queryKey: ['historial'] }) // Invalidar cache del historial
         queryClient.invalidateQueries({ queryKey: ['ultimo-historial-por-aplicacion', variables.id] })
       }, 0)
     },

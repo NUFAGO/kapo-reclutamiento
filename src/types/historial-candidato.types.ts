@@ -8,7 +8,7 @@ import { EstadoKanban } from '@/app/(dashboard)/kanban/lib/kanban.types';
 // ENUMERACIONES
 // ============================================================================
 
-export type TipoCambioHistorial = 'APROBACION' | 'RECHAZO' | 'MOVIMIENTO' | 'REACTIVACION';
+export type TipoCambioHistorial = 'APROBACION' | 'RECHAZO' | 'MOVIMIENTO' | 'REACTIVACION' | 'FINALIZADO';
 
 // ============================================================================
 // ENTIDADES

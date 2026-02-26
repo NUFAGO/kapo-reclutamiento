@@ -2,9 +2,10 @@
 
 import { AplicacionCandidato } from '../lib/kanban.types'
 import { ESTADO_COLORES, PRIORIDAD_COLORES, COMPONENTE_COLORES, KANBAN_ESTADOS } from '../lib/kanban.constants'
-import { User, MapPin, DollarSign , Trophy, AlertTriangle, FileText, Eye, FileSymlink, Star } from 'lucide-react'
+import { User, MapPin, DollarSign , Trophy, AlertTriangle, FileText, Eye, FileSymlink, Star, CheckCircle } from 'lucide-react'
 import { LuBriefcaseBusiness } from "react-icons/lu";
 import { FaAward } from "react-icons/fa";
+import { useState, useEffect } from 'react'
 
 
 // Genera un color determinístico y estable a partir de un id (convocatoriaId)
@@ -36,6 +37,18 @@ interface KanbanCardProps {
 }
 
 export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkIsMobile()
+    window.addEventListener('resize', checkIsMobile)
+    return () => window.removeEventListener('resize', checkIsMobile)
+  }, [])
+
   const nombreCompleto = aplicacion.candidato
     ? `${aplicacion.candidato.nombres} ${aplicacion.candidato.apellidoPaterno} ${aplicacion.candidato.apellidoMaterno}`.trim()
     : 'Candidato sin información'
@@ -66,7 +79,7 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
 
   return (
     <div
-      onDoubleClick={onClick}
+      onClick={isMobile ? undefined : onClick}
       className={`
         relative border rounded-lg p-4 pl-4 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden
         ${esPosibleCandidato ? 'border-amber-300 shadow-amber-100' : ''}
@@ -134,6 +147,8 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
             #{aplicacion.ordenPrioridad}
           </div>
         )}
+
+
       </div>
 
       {/* Información principal */}
@@ -165,17 +180,13 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
             {pretensionFormateada}
           </span>
         </div>
+
+      
+
+      
+
       </div>
 
-      {/* Alerta de duplicado */}
-      {aplicacion.posibleDuplicado && (
-        <div className="flex items-center gap-2 mb-3 p-2 rounded-md" style={{ backgroundColor: COMPONENTE_COLORES.DUPLICADO.background, border: `1px solid ${COMPONENTE_COLORES.DUPLICADO.border}` }}>
-          <AlertTriangle className="w-4 h-4 text-yellow-600" />
-          <span className="text-xs font-medium" style={{ color: COMPONENTE_COLORES.DUPLICADO.text }}>
-            Posible duplicado ({aplicacion.similitudPorcentaje?.toFixed(0)}%)
-          </span>
-        </div>
-      )}
 
       {/* Footer con nombre del CV */}
       <div className="flex items-center justify-between " style={{ borderColor: 'var(--border-color)' }}>
@@ -211,6 +222,13 @@ export function KanbanCard({ aplicacion, onClick }: KanbanCardProps) {
           </span>
         )}
       </div>
+
+                        {/* Badge de proceso finalizado */}
+        {aplicacion.procesoFinalizadoCompleto && (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium shrink-0 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 justify-center mt-3">
+            Proceso Finalizado
+          </div>
+        )}
 
       {/* Información de expiración para posibles candidatos */}
       {esPosibleCandidato && aplicacion.fechaExpiracionPosibles && (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Modal, NotificationModal, Button, type CheckboxOption } from '@/components/ui'
 import { SelectSearch } from '@/components/ui/select-search'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
@@ -21,24 +21,27 @@ import { PrimeraEntrevistaTab } from './tabs/PrimeraEntrevistaTab'
 import { SegundoEntrevistaTab } from './tabs/SegundaEntrevistaTab'
 import { ReferenciaTab } from './tabs/ReferenciaTab'
 import { EvaluacionTab } from './tabs/EvaluacionTab'
+import AprobacionTab from './tabs/AprobacionTab'
 import { User, FileText, Phone, Calendar, CheckCircle, XCircle, History, Check, X } from 'lucide-react'
 import { CgArrowsExchange } from "react-icons/cg";
-import { useConvocatorias, useCambiarEstadoKanban, useReactivarAplicacion } from '@/hooks'
+import { useConvocatorias, useCambiarEstadoKanban, useReactivarAplicacion, useFinalizarCandidato } from '@/hooks'
 import { showSuccess, showError, showWarning, TOAST_DURATIONS } from '@/lib/toast-utils'
 import { getTabColorStyles } from '@/app/(dashboard)/kanban/utils/colors'
 import { useMutation } from '@tanstack/react-query'
+import { useAuth } from '@/context/auth-context'
+import { useTheme } from '@/context/theme-context'
 import { graphqlRequest } from '@/lib/graphql-client'
-import { CREAR_COMUNICACION_ENTRADA_MUTATION, ACTUALIZAR_APLICACION_MUTATION } from '@/graphql/mutations'
+import { CREAR_COMUNICACION_ENTRADA_MUTATION, ACTUALIZAR_APLICACION_MUTATION, FINALIZAR_CANDIDATO_MUTATION } from '@/graphql/mutations'
 import { OBTENER_HISTORIAL_APLICACION_QUERY, OBTENER_ULTIMO_HISTORIAL_POR_APLICACION_QUERY } from '@/graphql/queries'
-import HistorialAplicacionModal from './HistorialAplicacionModal'
 import { useQueryClient } from '@tanstack/react-query'
+import HistorialAplicacionModal from './HistorialAplicacionModal'
 
 interface CandidateModalProps {
     isOpen: boolean
     onClose: () => void
     aplicacion: AplicacionCandidato
     headerBackground?: string
-    onAplicacionStateChanged?: (aplicacionId: string, newEstado: EstadoKanban) => void
+    onAplicacionStateChanged?: (aplicacionId: string, newEstado: EstadoKanban, isFinalized?: boolean) => void
     viewOnly?: boolean
 }
 
@@ -51,7 +54,7 @@ const getTabsForEstado = (estado: EstadoKanban) => {
         { id: 'entrevista2', label: '2da Entrevista', icon: Calendar, estados: [KANBAN_ESTADOS.PROGRAMAR_2DA_ENTREVISTA] as EstadoKanban[] },
         { id: 'referencias', label: 'Referencias', icon: CheckCircle, estados: [KANBAN_ESTADOS.REFERENCIAS] as EstadoKanban[] },
         { id: 'documentos', label: 'Evaluación', icon: FileText, estados: [KANBAN_ESTADOS.EVALUACION_ANTISOBORNO] as EstadoKanban[] },
-        { id: 'aprobacion', label: 'Aprobación', icon: CheckCircle, estados: [KANBAN_ESTADOS.APROBACION_GERENCIA] as EstadoKanban[] },
+        { id: 'aprobacion', label: 'Aprobación', icon: CheckCircle, estados: [KANBAN_ESTADOS.LLAMAR_COMUNICAR_ENTRADA, KANBAN_ESTADOS.FINALIZADA] as EstadoKanban[] },
     ]
 
     // Filtrar tabs según el estado actual
@@ -85,6 +88,10 @@ const getInitialTab = (estado: EstadoKanban): string => {
         case KANBAN_ESTADOS.EVALUACION_ANTISOBORNO:
             return 'documentos'
         case KANBAN_ESTADOS.APROBACION_GERENCIA:
+            return 'documentos'
+        case KANBAN_ESTADOS.LLAMAR_COMUNICAR_ENTRADA:
+            return 'aprobacion'
+        case KANBAN_ESTADOS.FINALIZADA:
             return 'aprobacion'
         default:
             return 'recepcion'
@@ -110,12 +117,17 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
         return initialTab;
     })
     const [showRejectionModal, setShowRejectionModal] = useState(false)
+    const [rejectionTarget, setRejectionTarget] = useState<EstadoKanban | null>(null)
     const [showFinalizadaModal, setShowFinalizadaModal] = useState(false)
     const [loadingFinalizada, setLoadingFinalizada] = useState(false)
+    const [showFinalizeModal, setShowFinalizeModal] = useState(false)
     const [tabValidations, setTabValidations] = useState<Record<string, boolean>>({})
     const [showHistorialModal, setShowHistorialModal] = useState(false)
     const [showExchangeButtons, setShowExchangeButtons] = useState(false)
     const [selectedConvocatoriaId, setSelectedConvocatoriaId] = useState<string>('')
+
+    // State for evaluation action
+    const [evaluationAction, setEvaluationAction] = useState<string>('')
 
     // State for effective state (for discarded applications, use previous state)
     const [effectiveState, setEffectiveState] = useState(aplicacion.estadoKanban)
@@ -196,6 +208,17 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
 
     // Hook para obtener convocatorias disponibles
     const { convocatorias, loading: loadingConvocatorias } = useConvocatorias({ limit: 100 })
+
+    // Hook para finalizar candidato con protección de doble envío
+    const { finalizarCandidato, isLoading: isLoadingFinalizada } = useFinalizarCandidato()
+
+    // Hook para obtener usuario autenticado
+    const { user } = useAuth()
+
+    // Hook para obtener el tema
+    const { theme } = useTheme()
+    console.log('[FRONTEND] Usuario actual:', user)
+    console.log('[FRONTEND] user?.id:', user?.id)
 
     // Hook para actualizar aplicación (cambiar convocatoria)
     const actualizarAplicacionMutation = useMutation({
@@ -285,6 +308,12 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
 
     // Función para aprobar candidato (pasar al siguiente estado)
     const handleAprobar = async () => {
+        // Check if evaluation action is negative
+        if (aplicacion.estadoKanban === KANBAN_ESTADOS.EVALUACION_ANTISOBORNO && ['NO_ESTABLECER', 'SUSPENDER', 'TERMINAR'].includes(evaluationAction)) {
+            showError('No se puede avanzar con la acción seleccionada. Solo se permite avanzar con "Aceptar la relación y establecer controles".', { duration: TOAST_DURATIONS.NORMAL })
+            return
+        }
+
         // Check if the current state's tab data is filled
         const tabId = getTabIdForEstado(aplicacion.estadoKanban)
         if (tabId && tabValidations[tabId] === false) {
@@ -294,13 +323,57 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
 
         const siguienteEstado = getSiguienteEstadoAprobacion(aplicacion.estadoKanban)
 
-        // Si el siguiente estado es FINALIZADA, mostrar modal de confirmación
+        // Si ya está en FINALIZADA, finalizar directamente sin modal de comunicación
+        if (aplicacion.estadoKanban === KANBAN_ESTADOS.FINALIZADA) {
+            // Verificar si ya está finalizado
+            if (aplicacion.procesoFinalizadoCompleto) {
+                showWarning('El candidato ya ha sido finalizado.', { duration: TOAST_DURATIONS.NORMAL })
+                return
+            }
+
+            finalizarCandidato(aplicacion.id, user?.id, {
+                onSuccess: (resultado: any) => {
+                    console.log('[FRONTEND] Llamando a finalizarCandidato con:', {
+                        aplicacionId: aplicacion.id,
+                        usuarioId: user?.id
+                    })
+                    console.log('Resultado de finalizar candidato:', resultado)
+                    
+                    const { success, aplicacion: aplicacionActualizada, candidato, convocatoria, personalId } = resultado
+                    
+                    if (success) {
+                        showSuccess(`Candidato finalizado correctamente. Empleado creado: ${personalId}`, { duration: TOAST_DURATIONS.NORMAL })
+                        console.log('Entidades afectadas:', {
+                            aplicacionActualizada,
+                            candidatoActualizado: candidato,
+                            convocatoriaActualizada: convocatoria,
+                            personalId
+                        })
+                        onClose()
+                        if (onAplicacionStateChanged) {
+                            setTimeout(() => onAplicacionStateChanged(aplicacion.id, KANBAN_ESTADOS.FINALIZADA, true), 300)
+                        }
+                    } else {
+                        showError('Error al finalizar candidato', { duration: TOAST_DURATIONS.NORMAL })
+                    }
+                },
+                onError: (error: any) => {
+                    console.error('Error al finalizar candidato:', error)
+                    showError('Error al finalizar candidato. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
+                }
+            })
+            return
+        }
+
+        // Si el siguiente estado es FINALIZADA, mostrar modal de confirmación de comunicación
         if (siguienteEstado === KANBAN_ESTADOS.FINALIZADA) {
             setShowFinalizadaModal(true)
             return
         }
 
-        const motivo = `Aprobación desde ${ESTADO_LABELS[aplicacion.estadoKanban]}`
+        const motivo = aplicacion.estadoKanban === KANBAN_ESTADOS.ENTREVISTA_PREVIA || aplicacion.estadoKanban === KANBAN_ESTADOS.APROBACION_GERENCIA
+            ? `Aprobación desde ${ESTADO_LABELS[aplicacion.estadoKanban]}`
+            : `Movimiento desde ${ESTADO_LABELS[aplicacion.estadoKanban]}`
         const comentarios = 'Candidato aprobado para continuar con el proceso'
 
         try {
@@ -329,6 +402,17 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
 
     // Función para mostrar el modal de confirmación de rechazo
     const handleRechazar = () => {
+        // Determinar el estado objetivo según el estado actual
+        const estadoActual = aplicacion.estadoKanban
+        const estadosParaPosibles: readonly EstadoKanban[] = [
+            KANBAN_ESTADOS.REFERENCIAS,
+            KANBAN_ESTADOS.EVALUACION_ANTISOBORNO,
+            KANBAN_ESTADOS.APROBACION_GERENCIA,
+            KANBAN_ESTADOS.LLAMAR_COMUNICAR_ENTRADA,
+            KANBAN_ESTADOS.FINALIZADA
+        ]
+        const estadoObjetivo = estadosParaPosibles.includes(estadoActual) ? KANBAN_ESTADOS.POSIBLES_CANDIDATOS : KANBAN_ESTADOS.DESCARTADO
+        setRejectionTarget(estadoObjetivo)
         setShowRejectionModal(true)
     }
 
@@ -336,10 +420,12 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     const handleConfirmRechazo = async (comentario?: string) => {
         if (!comentario) return;
 
+        const estadoObjetivo = rejectionTarget || KANBAN_ESTADOS.DESCARTADO
+
         try {
             await cambiarEstado({
                 id: aplicacion.id,
-                estadoKanban: KANBAN_ESTADOS.DESCARTADO,
+                estadoKanban: estadoObjetivo,
                 candidatoId: aplicacion.candidatoId,
                 motivo: 'Rechazo manual desde recepción de CV',
                 comentarios: comentario,
@@ -348,8 +434,14 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
             showSuccess('Candidato rechazado correctamente', { duration: TOAST_DURATIONS.NORMAL })
             setShowRejectionModal(false)
             onClose()
+            console.log(`[DEBUG] Rechazo exitoso: aplicacion ${aplicacion.id} movida a ${estadoObjetivo}`)
             if (onAplicacionStateChanged) {
-                setTimeout(() => onAplicacionStateChanged(aplicacion.id, KANBAN_ESTADOS.DESCARTADO), 300)
+                setTimeout(() => {
+                    console.log(`[DEBUG] Llamando onAplicacionStateChanged para ${aplicacion.id} a ${estadoObjetivo}`)
+                    onAplicacionStateChanged(aplicacion.id, estadoObjetivo)
+                }, 300)
+            } else {
+                console.warn('[DEBUG] onAplicacionStateChanged no definido')
             }
         } catch (error) {
             console.error('Error al rechazar candidato:', error)
@@ -365,13 +457,13 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     // Función para confirmar la finalización con checkboxes
     const handleConfirmFinalizada = async (comment?: string, checkboxes?: CheckboxOption[]) => {
         if (!checkboxes || !checkboxes.every(cb => cb.checked)) {
-            showError('Debes marcar ambas confirmaciones para finalizar.', { duration: TOAST_DURATIONS.NORMAL })
+            showError('Debes marcar ambas confirmaciones para avanzar.', { duration: TOAST_DURATIONS.NORMAL })
             return
         }
 
         setLoadingFinalizada(true)
         try {
-            // Primero crear el registro de comunicación de entrada
+            // Crear el registro de comunicación de entrada
             await crearComunicacionEntradaMutation.mutateAsync({
                 aplicacionCandidatoId: aplicacion.id,
                 candidatoId: aplicacion.candidatoId,
@@ -379,28 +471,25 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                 comunicacionConfirmada: true
             })
 
-            // Luego cambiar el estado a FINALIZADA
-            const motivo = `Finalización desde ${ESTADO_LABELS[aplicacion.estadoKanban]}`
-            const comentarios = 'Candidato finalizado con comunicación confirmada'
-
+            // Avanzar a la columna FINALIZADA (solo cambiar estado, no finalizar candidato)
             await cambiarEstado({
                 id: aplicacion.id,
                 estadoKanban: KANBAN_ESTADOS.FINALIZADA,
                 candidatoId: aplicacion.candidatoId,
-                motivo,
-                comentarios,
+                motivo: 'Avance a FINALIZADA con comunicación confirmada',
+                comentarios: 'Comunicación de entrada realizada y confirmada',
                 estadoAnterior: aplicacion.estadoKanban
             })
 
-            showSuccess('Candidato finalizado correctamente', { duration: TOAST_DURATIONS.NORMAL })
+            showSuccess('Candidato avanzado a FINALIZADA correctamente.', { duration: TOAST_DURATIONS.NORMAL })
             setShowFinalizadaModal(false)
             onClose()
             if (onAplicacionStateChanged) {
                 setTimeout(() => onAplicacionStateChanged(aplicacion.id, KANBAN_ESTADOS.FINALIZADA), 300)
             }
         } catch (error) {
-            console.error('Error al finalizar candidato:', error)
-            showError('Error al finalizar candidato. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
+            console.error('Error al avanzar candidato:', error)
+            showError('Error al avanzar candidato. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG })
         } finally {
             setLoadingFinalizada(false)
         }
@@ -469,9 +558,15 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
             })
             showSuccess('Candidato reactivado correctamente', { duration: TOAST_DURATIONS.NORMAL })
             onClose()
+            console.log(`[DEBUG] Reactivacion exitosa: aplicacion ${aplicacion.id} movida a ${result.estadoKanban}`)
             // Usar el estado retornado por la mutación (determinado por el historial)
             if (onAplicacionStateChanged) {
-                setTimeout(() => onAplicacionStateChanged(aplicacion.id, result.estadoKanban), 300)
+                setTimeout(() => {
+                    console.log(`[DEBUG] Llamando onAplicacionStateChanged para reactivacion ${aplicacion.id} a ${result.estadoKanban}`)
+                    onAplicacionStateChanged(aplicacion.id, result.estadoKanban)
+                }, 300)
+            } else {
+                console.warn('[DEBUG] onAplicacionStateChanged no definido para reactivacion')
             }
         } catch (error) {
             console.error('Error al reactivar candidato:', error)
@@ -485,12 +580,13 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
 
     const tabs = loadingEffectiveState ? [] : getTabsForEstado(effectiveState)
 
+    // Validation callback
+    const validationCallback = useCallback((isValid: boolean) => {
+        setTabValidations(prev => ({ ...prev, [activeTab]: isValid }))
+    }, [activeTab])
+
     // Renderizar contenido del tab activo
     const renderTabContent = () => {
-        const validationCallback = (isValid: boolean) => {
-            setTabValidations(prev => ({ ...prev, [activeTab]: isValid }))
-        }
-
         const tabViewOnly = viewOnly || isArchived
 
         switch (activeTab) {
@@ -505,9 +601,9 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
             case 'referencias':
                 return <ReferenciaTab aplicacion={aplicacion} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
             case 'documentos':
-                return <EvaluacionTab aplicacion={aplicacion} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
+                return <EvaluacionTab aplicacion={aplicacion} onValidationChange={validationCallback} onActionChange={setEvaluationAction} viewOnly={tabViewOnly} />
             case 'aprobacion':
-                return <div className="p-4 text-center" style={{ color: 'var(--text-secondary)' }}>Tab de Aprobación (próximamente)</div>
+                return <AprobacionTab aplicacionId={aplicacion.id} onValidationChange={validationCallback} viewOnly={tabViewOnly} />
             default:
                 return null
         }
@@ -592,7 +688,10 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     const getTextoBotonAprobar = (estadoActual: EstadoKanban): string => {
         const siguienteEstado = getSiguienteEstadoAprobacion(estadoActual)
         if (siguienteEstado === estadoActual) {
-            return 'Aprobar' // Fallback si no hay siguiente estado
+            return 'Finalizar' // Para estados finales como FINALIZADA
+        }
+        if (estadoActual === KANBAN_ESTADOS.ENTREVISTA_PREVIA || estadoActual === KANBAN_ESTADOS.APROBACION_GERENCIA) {
+            return 'Aprobar'
         }
         return `Avanzar`
     }
@@ -604,7 +703,15 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
 
     const isArchived = mostrarBotonReactivar
 
-    const modalFooter = (
+    const modalFooter = aplicacion.procesoFinalizadoCompleto ? (
+        <div className="flex items-center justify-center px-4">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                <span className="text-xs font-medium text-green-800 dark:text-green-200">
+                    Proceso Finalizado
+                </span>
+            </div>
+        </div>
+    ) : (
         <div className="flex items-center justify-between px-4">
             <div></div>
             <div className="flex gap-2">
@@ -637,7 +744,15 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                         color="primary"
                         size="xs"
                         icon={<CheckCircle className="w-4 h-4" />}
-                        onClick={handleAprobar}
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            if (aplicacion.estadoKanban === KANBAN_ESTADOS.FINALIZADA) {
+                                setShowFinalizeModal(true)
+                            } else {
+                                handleAprobar()
+                            }
+                        }}
                         disabled={loadingCambioEstado || loadingReactivacion}
                     >
                         {loadingCambioEstado ? 'Procesando...' : getTextoBotonAprobar(aplicacion.estadoKanban)}
@@ -679,7 +794,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         className="flex items-center gap-1.5 px-3 py-3 text-xs transition-colors border-b-2 hover:bg-gray-50/50"
-                                        style={getTabColorStyles(aplicacion.convocatoriaId, isActive)}
+                                        style={getTabColorStyles(aplicacion.convocatoriaId, isActive, theme)}
                                     >
                                         <Icon className="w-3.5 h-3.5" />
                                         {tab.label}
@@ -705,13 +820,53 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                 </div>
             </Modal>
 
+            {/* Modal de confirmación de finalización */}
+            <NotificationModal
+                isOpen={showFinalizeModal}
+                onClose={() => setShowFinalizeModal(false)}
+                type="warning"
+                message="Confirmar Finalización"
+                description={
+                    <div>
+                        <p style={{ marginBottom: '10px' }}>Este personal se creará:</p>
+                        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                            <span>• Nombre: {aplicacion.candidato ? `${aplicacion.candidato.nombres} ${aplicacion.candidato.apellidoPaterno} ${aplicacion.candidato.apellidoMaterno}`.trim() : 'N/A'}</span>
+                            <span>• Email: {aplicacion.candidato?.correo || 'N/A'}</span>
+                            <span>• DNI: {aplicacion.candidato?.dni || 'N/A'}</span>
+                        </div>
+                    </div>
+                }
+                confirmText="Finalizar Candidato"
+                cancelText="Cancelar"
+                onConfirm={() => {
+                    finalizarCandidato(aplicacion.id, user?.id, {
+                        onSuccess: (resultado: any) => {
+                            console.log('[FRONTEND] Finalización exitosa:', resultado);
+                            showSuccess(`Candidato finalizado correctamente. Empleado creado: ${resultado.personalId}`, { duration: TOAST_DURATIONS.NORMAL });
+                            setShowFinalizeModal(false);
+                            onClose();
+                            if (onAplicacionStateChanged) {
+                                setTimeout(() => onAplicacionStateChanged(aplicacion.id, KANBAN_ESTADOS.FINALIZADA, true), 300);
+                            }
+                        },
+                        onError: (error: any) => {
+                            console.error('Error al finalizar candidato:', error);
+                            showError('Error al finalizar candidato. Inténtalo nuevamente.', { duration: TOAST_DURATIONS.LONG });
+                            setShowFinalizeModal(false);
+                        }
+                    });
+                }}
+                onCancel={() => setShowFinalizeModal(false)}
+                loading={isLoadingFinalizada}
+            />
+
             {/* Modal de confirmación de rechazo */}
             <NotificationModal
                 isOpen={showRejectionModal}
                 onClose={handleCancelRechazo}
                 type="error"
-                description="El candidato será movido a la columna de descartados."
-                confirmText="Descartar Candidato"
+                description={`El candidato será movido a la columna de ${rejectionTarget === KANBAN_ESTADOS.POSIBLES_CANDIDATOS ? 'posibles candidatos' : 'descartados'}.`}
+                confirmText={rejectionTarget === KANBAN_ESTADOS.POSIBLES_CANDIDATOS ? 'Mover a Posibles Candidatos' : 'Descartar Candidato'}
                 cancelText="Cancelar"
                 onConfirm={handleConfirmRechazo}
                 onCancel={handleCancelRechazo}
@@ -719,14 +874,14 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                 commentPlaceholder="Escribe el motivo del rechazo..."
             />
 
-            {/* Modal de confirmación de finalización */}
+            {/* Modal de confirmación de comunicación */}
             <NotificationModal
                 isOpen={showFinalizadaModal}
                 onClose={handleCancelFinalizada}
                 type="warning"
-                message="Confirmar Finalización"
-                description="Para finalizar el proceso de selección, confirma que se realizó la comunicación de entrada."
-                confirmText="Finalizar Candidato"
+                message="Confirmar Comunicación de Entrada"
+                description="Antes de avanzar a la columna FINALIZADA, confirma que se realizó la llamada y comunicación de entrada al candidato."
+                confirmText="Avanzar"
                 cancelText="Cancelar"
                 onConfirm={handleConfirmFinalizada}
                 onCancel={handleCancelFinalizada}

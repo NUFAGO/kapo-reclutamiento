@@ -19,6 +19,7 @@ export const OBTENER_FORMULARIO_CONFIG_QUERY = `
           min
           max
           patron
+          maxLength
         }
       }
       estado
@@ -55,6 +56,7 @@ export const OBTENER_FORMULARIO_CONFIG_POR_ID_QUERY = `
           min
           max
           patron
+          maxLength
         }
       }
       estado

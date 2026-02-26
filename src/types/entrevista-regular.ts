@@ -4,11 +4,14 @@
 
 export type TipoEntrevista = 'PRIMERA' | 'SEGUNDA'
 
+export type ModalidadEntrevista = 'PRESENCIAL' | 'VIRTUAL'
+
 export interface EntrevistaRegular {
   id: string
   aplicacionCandidatoId: string
   candidatoId: string
   tipo_entrevista: TipoEntrevista
+  modalidad?: ModalidadEntrevista
   fecha_entrevista: string
   hora_entrevista: string
   correo_contacto: string
@@ -24,6 +27,7 @@ export interface CrearEntrevistaRegularInput {
   aplicacionCandidatoId: string
   candidatoId: string
   tipo_entrevista: TipoEntrevista
+  modalidad: ModalidadEntrevista
   fecha_entrevista: string
   hora_entrevista: string
   correo_contacto: string
@@ -34,6 +38,7 @@ export interface CrearEntrevistaRegularInput {
 }
 
 export interface ActualizarEntrevistaRegularInput {
+  modalidad?: ModalidadEntrevista
   fecha_entrevista?: string
   hora_entrevista?: string
   correo_contacto?: string

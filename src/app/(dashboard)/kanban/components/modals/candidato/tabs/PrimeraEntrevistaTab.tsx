@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { Calendar, Mail, Clock, Save, Edit } from 'lucide-react'
-import { Input, Button } from '@/components/ui'
+import { Input, Button, Select } from '@/components/ui'
 import { showSuccess, showError, TOAST_DURATIONS } from '@/lib/toast-utils'
 import {
     useEntrevistaRegularPorAplicacion,
@@ -25,11 +25,14 @@ interface PrimeraEntrevistaTabProps {
     viewOnly?: boolean
 }
 
+import { ModalidadEntrevista } from '@/types/entrevista-regular'
+
 interface FormData {
     fecha: string
     hora: string
     correo: string
     entrevistadorId: string
+    modalidad: ModalidadEntrevista
 }
 
 export function PrimeraEntrevistaTab({ aplicacion, onValidationChange, viewOnly = false }: PrimeraEntrevistaTabProps) {
@@ -60,7 +63,8 @@ export function PrimeraEntrevistaTab({ aplicacion, onValidationChange, viewOnly 
         fecha: '',
         hora: '',
         correo: '',
-        entrevistadorId: ''
+        entrevistadorId: '',
+        modalidad: 'PRESENCIAL'
     })
 
     // Cargar datos cuando existe entrevista
@@ -70,7 +74,8 @@ export function PrimeraEntrevistaTab({ aplicacion, onValidationChange, viewOnly 
                 fecha: new Date(entrevista.fecha_entrevista).toISOString().split('T')[0],
                 hora: entrevista.hora_entrevista,
                 correo: entrevista.correo_contacto,
-                entrevistadorId: entrevista.entrevistador_nombre || ''
+                entrevistadorId: entrevista.entrevistador_nombre || '',
+                modalidad: entrevista.modalidad || 'PRESENCIAL'
             }
 
             setFormData(loadedData)
@@ -128,6 +133,9 @@ export function PrimeraEntrevistaTab({ aplicacion, onValidationChange, viewOnly 
         if (!formData.hora?.trim()) {
             errors.push('Hora de Entrevista')
         }
+        if (!formData.modalidad) {
+            errors.push('Modalidad de Entrevista')
+        }
         if (formData.correo?.trim() && !isValidEmail(formData.correo)) {
             errors.push('Correo Electrónico (formato inválido)')
         }
@@ -158,6 +166,7 @@ export function PrimeraEntrevistaTab({ aplicacion, onValidationChange, viewOnly 
                 aplicacionCandidatoId: aplicacion.id,
                 candidatoId: aplicacion.candidatoId,
                 tipo_entrevista: 'PRIMERA' as const,
+                modalidad: formData.modalidad,
                 fecha_entrevista: new Date(formData.fecha).toISOString(),
                 hora_entrevista: formData.hora,
                 correo_contacto: formData.correo,
@@ -168,6 +177,7 @@ export function PrimeraEntrevistaTab({ aplicacion, onValidationChange, viewOnly 
             if (entrevista) {
                 // Actualizar entrevista existente
                 await actualizarEntrevista({ id: entrevista.id, input: {
+                    modalidad: formData.modalidad,
                     fecha_entrevista: saveData.fecha_entrevista,
                     hora_entrevista: saveData.hora_entrevista,
                     correo_contacto: saveData.correo_contacto,
@@ -229,6 +239,24 @@ export function PrimeraEntrevistaTab({ aplicacion, onValidationChange, viewOnly 
                             label: `${usuario.nombres} ${usuario.apellidos}`.trim()
                         }))}
                         isLoading={loadingUsuarios}
+                    />
+                </div>
+
+                {/* Modalidad */}
+                <div className="space-y-1">
+                    <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Modalidad
+                    </label>
+                    <Select
+                        options={[
+                            { value: 'PRESENCIAL', label: 'Presencial' },
+                            { value: 'VIRTUAL', label: 'Virtual' }
+                        ]}
+                        value={formData.modalidad}
+                        onChange={(value) => handleInputChange('modalidad', value as ModalidadEntrevista)}
+                        disabled={!isEditMode && !!entrevista}
+                        className="h-8 text-xs"
+                        placeholder="Seleccionar modalidad..."
                     />
                 </div>
 

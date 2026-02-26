@@ -9,6 +9,7 @@ export const OBTENER_ENTREVISTA_REGULAR_QUERY = `
       aplicacionCandidatoId
       candidatoId
       tipo_entrevista
+      modalidad
       fecha_entrevista
       hora_entrevista
       correo_contacto
@@ -29,6 +30,7 @@ export const OBTENER_ENTREVISTA_REGULAR_POR_APLICACION_QUERY = `
       aplicacionCandidatoId
       candidatoId
       tipo_entrevista
+      modalidad
       fecha_entrevista
       hora_entrevista
       correo_contacto
@@ -55,6 +57,7 @@ export const LISTAR_ENTREVISTAS_REGULARES_QUERY = `
       aplicacionCandidatoId
       candidatoId
       tipo_entrevista
+      modalidad
       fecha_entrevista
       hora_entrevista
       correo_contacto

@@ -16,6 +16,7 @@ export interface Candidato {
   curriculumUrl: string
   fechaRegistro: string
   fechaActualizacion: string
+  personal_id?: string
 }
 
 // Entidad Convocatoria (desde GraphQL)
@@ -73,6 +74,10 @@ export interface AplicacionCandidato {
   esPosibleCandidatoActivado: boolean
   aplicacionPrincipalRechazadaId?: string
 
+  // Estado del proceso de finalización
+  procesoFinalizadoCompleto?: boolean
+  fechaFinalizacionProceso?: string
+
   // Metadata adicional
   tiempoEnEstadoDias?: number
 }
@@ -108,7 +113,7 @@ export interface KanbanBoardProps {
   convocatoriaId?: string
   candidatoId?: string
   aplicacionId?: string
-  onAplicacionClick?: (aplicacion: AplicacionCandidato, onMove?: (aplicacionId: string, newEstado: EstadoKanban) => void) => void
+  onAplicacionClick?: (aplicacion: AplicacionCandidato, onMove?: (aplicacionId: string, newEstado: EstadoKanban, isFinalized?: boolean) => void) => void
   viewMode?: 'main' | 'archived'
 }
 

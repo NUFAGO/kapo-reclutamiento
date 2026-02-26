@@ -35,6 +35,7 @@ export interface Convocatoria {
   token_formulario?: string
   fecha_creacion: string
   fecha_actualizacion: string
+  ganadores_ids: string[]
 }
 
 export interface UseConvocatoriasOptions {

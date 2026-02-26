@@ -29,6 +29,8 @@ const APLICACION_FIELDS = `
   posibleDuplicado
   ordenPrioridad
   respuestasFormulario
+  procesoFinalizadoCompleto
+  fechaFinalizacionProceso
 `
 
 export const LISTAR_APLICACIONES_QUERY = `

@@ -186,7 +186,7 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista }: EntrevistaLlama
                             <Text>NOMBRE DEL PUESTO:</Text>
                         </View>
                         <View style={[styles.cellLast, { width: '75%' }]}>
-                            <Text>{aplicacion.convocatoria?.cargoNombre}</Text>
+                            <Text>{aplicacion.convocatoria?.cargoNombre} - {aplicacion.convocatoria?.especialidad_nombre}</Text>
                         </View>
                     </View>
                     <View style={styles.tableRow}>

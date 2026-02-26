@@ -16,7 +16,7 @@ interface NotificationModalProps {
   onClose: () => void;
   type: NotificationType;
   message?: string;
-  description?: string;
+  description?: string | React.ReactNode;
   confirmText?: string;
   cancelText?: string;
   onConfirm?: (comment?: string, checkboxes?: CheckboxOption[]) => void;
@@ -187,9 +187,15 @@ export default function NotificationModal({
             </h3>
           )}
           {description && (
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              {description}
-            </p>
+            typeof description === 'string' ? (
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {description}
+              </p>
+            ) : (
+              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {description}
+              </div>
+            )
           )}
         </div>
 

@@ -227,6 +227,13 @@ export function ReferenciaTab({ aplicacion, onValidationChange, viewOnly = false
 
     const loading = loadingReferencias || loadingCrear || loadingActualizar || isUploading
 
+    // Helper function to extract filename from URL
+    const getFileNameFromUrl = (url: string): string => {
+        const parts = url.split('/')
+        const fileName = parts[parts.length - 1]
+        return fileName.includes('?') ? fileName.split('?')[0] : fileName
+    }
+
     // ─── File Upload Component ───────────────────────────────────────────────
     const FileUploadComponent = () => {
         const [isDragOver, setIsDragOver] = useState(false)
@@ -403,8 +410,13 @@ export function ReferenciaTab({ aplicacion, onValidationChange, viewOnly = false
                             placeholder="+51 999 999 999"
                             className="h-8 text-xs"
                             value={formData.numero_telefono}
-                            onChange={(e) => handleInputChange('numero_telefono', e.target.value)}
+                            onChange={(e) => {
+                                // Only allow numbers and limit to 9 digits
+                                const numericValue = e.target.value.replace(/\D/g, '').slice(0, 9)
+                                handleInputChange('numero_telefono', numericValue)
+                            }}
                             readOnly={!isEditMode && !!editingReferencia}
+                            maxLength={9}
                         />
                     </div>
                     <div className="space-y-1.5">
@@ -546,9 +558,6 @@ const renderReferenciasList = () => (
                             </Button>
                         </div>
 
-                        {/* Divider */}
-                        <div className="border-t mb-3" style={{ borderColor: 'var(--border-color)' }} />
-
                         {/* Info pills row */}
                         <div className="flex flex-wrap gap-2">
                             {referencia.numero_telefono && (
@@ -557,14 +566,15 @@ const renderReferenciasList = () => (
                                     <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{referencia.numero_telefono}</span>
                                 </div>
                             )}
-                            {referencia.archivosurl && referencia.archivosurl.length > 0 && (
-                                <div className="flex items-center gap-1.5 rounded-md px-2.5 py-1" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+                            {referencia.archivosurl && referencia.archivosurl.map((url, index) => (
+                                <div key={`file-${index}`} className="flex items-center gap-1.5 rounded-md px-2.5 py-1 border bg-blue-300/10 dark:bg-blue-200/5">
                                     <FileText className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
-                                    <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-                                        {referencia.archivosurl.length} archivo{referencia.archivosurl.length !== 1 ? 's' : ''}
-                                    </span>
+                                    <a href={url} target="_blank" rel="noopener noreferrer"
+                                        className="text-xs font-medium hover:text-blue-600 hover:underline truncate max-w-24" style={{ color: 'var(--text-primary)' }}>
+                                        {getFileNameFromUrl(url)}
+                                    </a>
                                 </div>
-                            )}
+                            ))}
                         </div>
 
                         {/* Optional text fields */}

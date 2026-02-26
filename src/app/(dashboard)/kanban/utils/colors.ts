@@ -57,8 +57,13 @@ export const hslToRgb = (h: number, s: number, l: number): { r: number; g: numbe
  * Obtiene estilos de color para tabs aplicando tonos como botones de Tailwind
  * Usa colores del tema oscuro para consistencia en ambos temas
  */
-export const getTabColorStyles = (convocatoriaId: string, isActive: boolean) => {
-  const { h, s, l } = getConvocatoriaColor(convocatoriaId);
+export const getTabColorStyles = (convocatoriaId: string, isActive: boolean, theme: 'light' | 'dark' = 'light') => {
+  let { h, s, l } = getConvocatoriaColor(convocatoriaId);
+
+  // Ajustar luminosidad si es muy clara en modo claro para mantener legibilidad
+  if (theme === 'light' && l > 60) {
+    l = Math.max(40, l - 20); // Reducir luminosidad en al menos 20 puntos, mínimo 40%
+  }
 
   // Color base (equivalente a -500)
   const baseRgb = hslToRgb(h, s, l);

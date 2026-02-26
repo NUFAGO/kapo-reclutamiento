@@ -144,8 +144,8 @@ export default function ConvocatoriasPage() {
   // Nota: Solo "ACTIVA" muestra punto visual, los demás estados están preparados para futuro uso
   const statusConfig = {
     ACTIVA: { label: 'Activa', color: 'bg-green-500' },
-    EN_PROCESO: { label: 'En Proceso', color: 'bg-blue-500' },
-    FINALIZADA: { label: 'Finalizada', color: 'bg-gray-500' },
+    EN_PROCESO: { label: 'En Proceso', color: 'bg-gray-500' },
+    FINALIZADA: { label: 'Finalizada', color: 'bg-orange-500' },
     CANCELADA: { label: 'Cancelada', color: 'bg-red-500' },
     // Estados adicionales preparados para el futuro
     PENDIENTE: { label: 'Pendiente', color: 'bg-yellow-500' },
@@ -200,14 +200,12 @@ export default function ConvocatoriasPage() {
         const status = statusConfig[value as keyof typeof statusConfig];
         if (!status) return value;
 
-        // Solo mostrar punto visual para ACTIVA
-        const showDot = value === 'ACTIVA';
+
 
         return (
           <div className="flex items-center justify-center gap-2">
-            {showDot && (
-              <span className={`status-dot ${status.color}`}></span>
-            )}
+
+            <span className={`status-dot size-1.5 rounded-full ${status.color}`}></span>
             <span className="text-sm">{status.label}</span>
           </div>
         );

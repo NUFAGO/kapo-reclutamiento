@@ -164,27 +164,26 @@ export function KanbanBoard({ convocatoriaId, onAplicacionClick, viewMode = 'mai
   }, [kanbanData, hasLoaded])
 
   // Función para mover una aplicación entre columnas localmente
-  const handleAplicacionStateChanged = useCallback((aplicacionId: string, newEstado: EstadoKanban) => {
-    // Verificar si ya estamos procesando este movimiento
-    if (processingMoves.has(aplicacionId)) {
-      return
-    }
+  const handleAplicacionStateChanged = useCallback((aplicacionId: string, newEstado: EstadoKanban, isFinalized?: boolean) => {
+    console.log(`[DEBUG] handleAplicacionStateChanged llamado: aplicacionId=${aplicacionId}, newEstado=${newEstado}`)
     
-    // En vista archived, permitir actualizaciones optimistas solo para reactivaciones
-    // (cuando se mueve de estado archivado a estado activo)
-    const isArchivedState = [KANBAN_ESTADOS.RECHAZADO_POR_CANDIDATO, KANBAN_ESTADOS.DESCARTADO, KANBAN_ESTADOS.POSIBLES_CANDIDATOS].includes(newEstado as any)
-    if (viewMode === 'archived' && isArchivedState) {
-      return
-    }
-
+    // Limpiar cualquier procesamiento anterior para esta aplicación
+    setProcessingMoves(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(aplicacionId)
+      return newSet
+    })
+    
     // Marcar como procesando
     setProcessingMoves(prev => new Set(prev).add(aplicacionId))
+    console.log(`[DEBUG] Marcado como procesando: ${aplicacionId}`)
 
     // Registrar el update optimista para persistirlo entre vistas
     setOptimisticUpdates(prev => ({
       ...prev,
       [aplicacionId]: newEstado
     }))
+    console.log(`[DEBUG] Update optimista registrado para ${aplicacionId} a ${newEstado}`)
 
     setColumnasData(prev => {
       const newColumnasData = { ...prev }
@@ -205,13 +204,18 @@ export function KanbanBoard({ convocatoriaId, onAplicacionClick, viewMode = 'mai
             aplicaciones: columna.aplicaciones.filter(app => app.id !== aplicacionId),
             totalCount: columna.totalCount - 1,
           }
+          console.log(`[DEBUG] Aplicacion ${aplicacionId} removida de columna ${estado}, count: ${columna.totalCount - 1}`)
           break
         }
       }
 
       if (aplicacionToMove && oldEstado) {
         // Actualizar el estado de la aplicación
-        const updatedAplicacion = { ...aplicacionToMove, estadoKanban: newEstado }
+        const updatedAplicacion = { 
+          ...aplicacionToMove, 
+          estadoKanban: newEstado,
+          ...(isFinalized && { procesoFinalizadoCompleto: true })
+        }
 
         // Agregar a la nueva columna
         const newColumna = newColumnasData[newEstado] || {
@@ -226,6 +230,9 @@ export function KanbanBoard({ convocatoriaId, onAplicacionClick, viewMode = 'mai
           aplicaciones: [updatedAplicacion, ...newColumna.aplicaciones], // Agregar al inicio
           totalCount: newColumna.totalCount + 1,
         }
+        console.log(`[DEBUG] Aplicacion ${aplicacionId} agregada a columna ${newEstado}, count: ${newColumna.totalCount + 1}`)
+      } else {
+        console.warn(`[DEBUG] No se pudo mover aplicacion ${aplicacionId}: not found or no oldEstado`)
       }
 
       return newColumnasData
@@ -236,6 +243,7 @@ export function KanbanBoard({ convocatoriaId, onAplicacionClick, viewMode = 'mai
       setProcessingMoves(prev => {
         const newSet = new Set(prev)
         newSet.delete(aplicacionId)
+        console.log(`[DEBUG] Procesamiento limpiado para ${aplicacionId}`)
         return newSet
       })
     }, 1000)

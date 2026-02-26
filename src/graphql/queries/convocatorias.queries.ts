@@ -24,6 +24,7 @@ export const GET_CONVOCATORIAS_QUERY = `
         token_formulario
         fecha_creacion
         fecha_actualizacion
+        ganadores_ids
       }
       totalCount
     }
@@ -54,6 +55,7 @@ export const GET_CONVOCATORIA_QUERY = `
       token_formulario
       fecha_creacion
       fecha_actualizacion
+      ganadores_ids
     }
   }
 `
@@ -82,6 +84,7 @@ export const GET_CONVOCATORIA_POR_REQUERIMIENTO_QUERY = `
       token_formulario
       fecha_creacion
       fecha_actualizacion
+      ganadores_ids
     }
   }
 `

@@ -72,3 +72,42 @@ export const ACTUALIZAR_APLICACION_MUTATION = `
     }
   }
 `
+
+export const FINALIZAR_CANDIDATO_MUTATION = `
+  mutation FinalizarCandidato($aplicacionId: ID!, $usuarioId: ID) {
+    finalizarCandidato(aplicacionId: $aplicacionId, usuarioId: $usuarioId) {
+      success
+      aplicacion {
+        id
+        candidatoId
+        convocatoriaId
+        estadoKanban
+        procesoFinalizadoCompleto
+        fechaFinalizacionProceso
+      }
+      candidato {
+        id
+        dni
+        nombres
+        apellidoPaterno
+        apellidoMaterno
+        correo
+        telefono
+        personal_id
+        aplicacionesGanadas
+        convocatorias_ganadas
+      }
+      convocatoria {
+        id
+        codigoConvocatoria
+        cargoNombre
+        obraNombre
+        empresaNombre
+        vacantes
+        estadoConvocatoria
+        ganadores_ids
+      }
+      personalId
+    }
+  }
+`

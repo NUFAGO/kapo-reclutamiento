@@ -62,9 +62,9 @@ export function useEmpleados(options: UseEmpleadosOptions = {}): UseEmpleadosRet
 }
 
 /**
- * Función de búsqueda de empleados para SelectSearch
+ * Función de búsqueda de empleados que devuelve objetos completos
  */
-export async function searchEmpleados(searchTerm: string): Promise<SelectSearchOption[]> {
+export async function searchEmpleadosFull(searchTerm: string): Promise<EmpleadoBasico[]> {
   try {
     const response = await personalGraphQLRequest<{
       listEmpleadoCH: BuscarEmpleadosResponse
@@ -75,12 +75,7 @@ export async function searchEmpleados(searchTerm: string): Promise<SelectSearchO
       }
     })
 
-    const empleados = response.listEmpleadoCH.empleados
-
-    return empleados.map(empleado => ({
-      value: empleado.id,
-      label: `${empleado.nombres} ${empleado.ap_paterno} ${empleado.ap_materno}`.trim()
-    }))
+    return response.listEmpleadoCH.empleados
   } catch (error) {
     console.error('Error buscando empleados:', error)
     return []

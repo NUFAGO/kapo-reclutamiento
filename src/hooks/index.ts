@@ -119,3 +119,14 @@ export {
   type ActualizarDebidaDiligenciaInput,
   type CrearControlEvaluacionInput,
 } from './useDebidaDiligencia';
+
+// Hooks de comunicación entrada
+export {
+  useComunicacionEntradaPorAplicacion,
+} from './useComunicacionEntrada';
+
+// Hooks de finalizar candidato
+export {
+  useFinalizarCandidato,
+  type FinalizarCandidatoResult,
+} from './useFinalizarCandidato';

@@ -29,6 +29,7 @@ interface CampoFormulario {
     patron?: string;
     maxSize?: number;
     maxFiles?: number;
+    maxLength?: number;
     allowedTypes?: string[];
   };
 }
@@ -624,9 +625,9 @@ export default function PostularPage() {
             {config.titulo}
           </h1>
           {config.descripcion && (
-            <p className="text-sm text-gray-600 leading-relaxed max-w-xl">
+            <div className="text-sm text-gray-600 leading-relaxed max-w-xl" style={{ whiteSpace: 'pre-wrap' }}>
               {config.descripcion}
-            </p>
+            </div>
           )}
         </div>
 
@@ -776,7 +777,7 @@ function FormField({ campo, value, onChange, isTerminosField = false, dniExists,
             type="text"
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={campo.placeholder || `Ingresa tu ${campo.etiqueta.toLowerCase()}`}
+            placeholder={campo.nombre === 'lugar_residencia' ? (campo.placeholder || 'Ej: Av. Los Próceres 123, Dpto 402') : (campo.placeholder || `Ingresa tu ${campo.etiqueta.toLowerCase()}`)}
             required={campo.requerido}
             title={campo.nombre === 'dni' && dniExists ? '⚠️ Ya existe un candidato con este DNI. Completa el formulario para confirmar tu identidad.' : undefined}
           />
@@ -797,8 +798,9 @@ function FormField({ campo, value, onChange, isTerminosField = false, dniExists,
             type="tel"
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={campo.placeholder || '+51 999 999 999'}
+            placeholder={campo.placeholder || 'XXX XXX XXX'}
             required={campo.requerido}
+            maxLength={campo.validaciones?.maxLength}
           />
         )}
 

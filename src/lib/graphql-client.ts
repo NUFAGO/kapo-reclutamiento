@@ -29,16 +29,45 @@ export const personalGraphQLClient = new GraphQLClient(PERSONAL_GRAPHQL_ENDPOINT
   },
 })
 
+// Función para obtener la URL del servicio según el nombre del servicio
+function getServiceUrl(serviceName?: string) {
+  if (serviceName === 'personal') {
+    return PERSONAL_GRAPHQL_ENDPOINT;
+  }
+  return GRAPHQL_ENDPOINT;
+}
+
 // Función helper para hacer requests con manejo de errores
 export async function graphqlRequest<T = any>(
   query: string,
-  variables?: Record<string, any>
+  variables?: any,
+  serviceName?: string
 ): Promise<T> {
+  const url = getServiceUrl(serviceName);
+  
   try {
-    return await graphqlClient.request<T>(query, variables)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+    });
+
+    const result = await response.json();
+
+    // Si hay errores GraphQL, lanzarlos incluso si el status HTTP es 200
+    if (result.errors && result.errors.length > 0) {
+      const errorMessages = result.errors.map((e: any) => e.message).join(', ');
+      throw new Error(`GraphQL errors: ${errorMessages}`);
+    }
+
+    return result.data;
   } catch (error) {
-    console.error('GraphQL Request Error:', error)
-    throw error
+    throw error;
   }
 }
 

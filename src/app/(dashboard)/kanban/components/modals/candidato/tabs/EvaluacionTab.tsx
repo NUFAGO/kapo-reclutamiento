@@ -8,20 +8,22 @@ import { Select } from '@/components/ui'
 import type { SelectOption } from '@/components/ui'
 import { Button, Textarea, Input, Modal } from '@/components/ui'
 import { FaRegFilePdf } from "react-icons/fa";
-import { useEmpleados, searchEmpleados } from '@/hooks/useEmpleados'
+import { useEmpleados, searchEmpleadosFull, type EmpleadoBasico } from '@/hooks/useEmpleados'
 import { SelectSearch } from '@/components/ui/select-search'
 import { useDebidaDiligenciaPorAplicacion, useCrearDebidaDiligencia, useActualizarDebidaDiligencia, type DebidaDiligencia, type CrearDebidaDiligenciaInput, type ActualizarDebidaDiligenciaInput } from '@/hooks'
 import { showSuccess, showError, TOAST_DURATIONS } from '@/lib/toast-utils'
 import { DebidaDiligenciaPdf } from '../pdfs/DebidaDiligenciaPdf'
 import { pdf } from '@react-pdf/renderer'
+import { useAuth } from '@/hooks'
 
 interface EvaluacionTabProps {
     aplicacion: AplicacionCandidato
     onValidationChange?: (isValid: boolean) => void
+    onActionChange?: (action: string) => void
     viewOnly?: boolean
 }
 
-export function EvaluacionTab({ aplicacion, onValidationChange, viewOnly = false }: EvaluacionTabProps) {
+export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, viewOnly = false }: EvaluacionTabProps) {
     const nombreCompleto = aplicacion.candidato
         ? `${aplicacion.candidato.nombres} ${aplicacion.candidato.apellidoPaterno} ${aplicacion.candidato.apellidoMaterno}`.trim()
         : 'Candidato'
@@ -105,6 +107,11 @@ export function EvaluacionTab({ aplicacion, onValidationChange, viewOnly = false
     // Estado para acción seleccionada
     const [selectedAction, setSelectedAction] = useState('')
 
+    // Call onActionChange when selectedAction changes
+    useEffect(() => {
+        onActionChange?.(selectedAction)
+    }, [selectedAction, onActionChange])
+
     // Estados para controles
     const [controles, setControles] = useState<{item: number, control: string, responsable: string, fechaLimite: string}[]>([])
 
@@ -124,9 +131,10 @@ export function EvaluacionTab({ aplicacion, onValidationChange, viewOnly = false
     // Report validation when data is loaded
     useEffect(() => {
         if (!loadingDebidaDiligencia) {
-            onValidationChange?.(!!existingDebidaDiligencia)
+            const isValid = !!existingDebidaDiligencia && selectedAction === 'ACEPTAR_CON_CONTROLES'
+            onValidationChange?.(isValid)
         }
-    }, [existingDebidaDiligencia, loadingDebidaDiligencia])
+    }, [existingDebidaDiligencia, loadingDebidaDiligencia, selectedAction, onValidationChange])
 
     // Cargar datos existentes cuando estén disponibles
     useEffect(() => {
@@ -519,6 +527,13 @@ export function EvaluacionTab({ aplicacion, onValidationChange, viewOnly = false
                                         className="h-8 text-xs"
                                         disabled={!isEditMode && !!existingDebidaDiligencia}
                                         showSearchIcon={true}
+                                        onSearch={async (searchTerm) => {
+                                            const searchResults = await searchEmpleadosFull(searchTerm)
+                                            return searchResults.map(empleado => ({
+                                                value: `${empleado.nombres} ${empleado.ap_paterno} ${empleado.ap_materno}`.trim(),
+                                                label: `${empleado.nombres} ${empleado.ap_paterno} ${empleado.ap_materno}`.trim()
+                                            }))
+                                        }}
                                         options={empleados.map(empleado => ({
                                             value: `${empleado.nombres} ${empleado.ap_paterno} ${empleado.ap_materno}`.trim(),
                                             label: `${empleado.nombres} ${empleado.ap_paterno} ${empleado.ap_materno}`.trim()
