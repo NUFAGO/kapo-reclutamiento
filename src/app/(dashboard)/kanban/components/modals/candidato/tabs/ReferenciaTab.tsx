@@ -1,19 +1,20 @@
-'use client'
-
 import React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { UserCheck, Save, Edit, Plus, Phone, Building, FileText, MessageSquare, X, ChevronRight } from 'lucide-react'
-import { Input, Button } from '@/components/ui'
+import { Input, Button, Modal } from '@/components/ui'
 import { showSuccess, showError, TOAST_DURATIONS } from '@/lib/toast-utils'
-import {
-    useReferenciasPorAplicacion,
-    useCrearReferencia,
-    useActualizarReferencia
-} from '@/hooks/useReferencias'
+import { graphqlRequest } from '@/lib/graphql-client';
+import { CREAR_REFERENCIA_MUTATION, ACTUALIZAR_REFERENCIA_MUTATION } from '@/graphql/mutations/referencia.mutations';
+import { GET_CONVOCATORIA_QUERY } from '@/graphql/queries/convocatorias.queries';
+import { useReferenciasPorAplicacion, useCrearReferencia, useActualizarReferencia } from '@/hooks/useReferencias'
 import { Referencia } from '@/hooks/useReferencias'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import toast from 'react-hot-toast'
+import { pdf } from '@react-pdf/renderer'
+import { EntrevistaLlamadaPdf } from '../pdfs/EntrevistaLlamadaPdf'
+import { useEntrevistaLlamadaPorAplicacion } from '@/hooks/useEntrevistasLlamada'
+import { FaRegFilePdf } from "react-icons/fa";
 
 interface ReferenciaTabProps {
     aplicacion: AplicacionCandidato
@@ -33,6 +34,7 @@ interface FormData {
 
 export function ReferenciaTab({ aplicacion, onValidationChange, viewOnly = false }: ReferenciaTabProps) {
     const { data: referencias, isLoading: loadingReferencias } = useReferenciasPorAplicacion(aplicacion.id)
+    const { entrevista } = useEntrevistaLlamadaPorAplicacion(aplicacion.id)
     const { mutateAsync: crearReferencia, isPending: loadingCrear } = useCrearReferencia()
     const { mutateAsync: actualizarReferencia, isPending: loadingActualizar } = useActualizarReferencia()
     const { uploadMultipleFiles, deleteFile, isUploading, error: uploadError, clearError } = useFileUpload()
@@ -49,6 +51,10 @@ export function ReferenciaTab({ aplicacion, onValidationChange, viewOnly = false
     const [isEditMode, setIsEditMode] = useState(false)
     const [hasChanges, setHasChanges] = useState(false)
     const [originalData, setOriginalData] = useState<FormData | null>(null)
+
+    const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
+    const [pdfBlobUrl, setPdfBlobUrl] = useState<string | undefined>(undefined)
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
     const [formData, setFormData] = useState<FormData>({
         numero_telefono: '',
@@ -103,6 +109,21 @@ export function ReferenciaTab({ aplicacion, onValidationChange, viewOnly = false
             setHasChanges(false)
         }
     }, [formData, originalData, isEditMode])
+
+    // Generar PDF cuando se abre el modal
+    useEffect(() => {
+        if (isPdfModalOpen && entrevista) {
+            generatePdf()
+        }
+    }, [isPdfModalOpen, entrevista])
+
+    // Limpiar URL del PDF cuando se cierra el modal
+    useEffect(() => {
+        if (!isPdfModalOpen && pdfBlobUrl) {
+            URL.revokeObjectURL(pdfBlobUrl)
+            setPdfBlobUrl(undefined)
+        }
+    }, [isPdfModalOpen, pdfBlobUrl])
 
     const handleInputChange = (field: keyof FormData, value: string | File[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -207,15 +228,21 @@ export function ReferenciaTab({ aplicacion, onValidationChange, viewOnly = false
             if (formData.empresa.trim()) saveData.empresa = formData.empresa
             if (formData.comentarios.trim()) saveData.comentarios = formData.comentarios
 
-            if (editingReferencia) {
+            if (editingReferencia && originalData) {
                 const updateData: any = {
                     numero_telefono: saveData.numero_telefono,
                     nombresyapellidos: saveData.nombresyapellidos,
                     archivosurl: saveData.archivosurl
                 }
-                if (saveData.detalles !== undefined) updateData.detalles = saveData.detalles
-                if (saveData.empresa !== undefined) updateData.empresa = saveData.empresa
-                if (saveData.comentarios !== undefined) updateData.comentarios = saveData.comentarios
+                if (originalData.detalles !== formData.detalles) {
+                    updateData.detalles = formData.detalles.trim()
+                }
+                if (originalData.empresa !== formData.empresa) {
+                    updateData.empresa = formData.empresa.trim()
+                }
+                if (originalData.comentarios !== formData.comentarios) {
+                    updateData.comentarios = formData.comentarios.trim()
+                }
                 await actualizarReferencia({ id: editingReferencia.id, input: updateData })
                 showSuccess('Referencia actualizada correctamente', { duration: TOAST_DURATIONS.NORMAL })
             } else {
@@ -241,6 +268,35 @@ export function ReferenciaTab({ aplicacion, onValidationChange, viewOnly = false
         const parts = url.split('/')
         const fileName = parts[parts.length - 1]
         return fileName.includes('?') ? fileName.split('?')[0] : fileName
+    }
+
+    // Función para generar el PDF
+    const generatePdf = async () => {
+        if (!entrevista) return
+
+        setIsGeneratingPdf(true)
+        try {
+            // Buscar la convocatoria para obtener jefe_inmediato_nombre actualizado
+            const convocatoriaResponse = await graphqlRequest(GET_CONVOCATORIA_QUERY, { id: aplicacion.convocatoriaId });
+            const jefeInmediato = convocatoriaResponse.convocatoria?.detalle_staff_snapshot?.jefe_inmediato_nombre;
+
+            const pdfDoc = <EntrevistaLlamadaPdf aplicacion={aplicacion} entrevista={entrevista} referencias={referencias} jefeInmediato={jefeInmediato} />
+            const blob = await pdf(pdfDoc).toBlob()
+            const blobUrl = URL.createObjectURL(blob)
+
+            setPdfBlobUrl(blobUrl)
+        } catch (error) {
+            console.error('Error generating PDF:', error)
+            showError('Error al generar el PDF', { duration: TOAST_DURATIONS.LONG })
+        } finally {
+            setIsGeneratingPdf(false)
+        }
+    }
+
+    // Función para abrir el modal del PDF
+    const handleOpenPdfModal = () => {
+        setPdfBlobUrl(undefined) // Limpiar cache para regenerar
+        setIsPdfModalOpen(true)
     }
 
     // ─── File Upload Component ───────────────────────────────────────────────
@@ -509,14 +565,15 @@ const renderReferenciasList = () => (
         <div className="space-y-4">
             
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                        <UserCheck className="w-3.5 h-3.5" />
-                        Referencias
-                        <span className="ml-1.5 text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>
-                            ({referencias?.length || 0})
-                        </span>
-                    </h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                    <UserCheck className="w-3.5 h-3.5" />
+                    Referencias
+                    <span className="ml-1.5 text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>
+                        ({referencias?.length || 0})
+                    </span>
+                </h3>
+                <div className="flex items-center gap-2">
                     <Button
                         variant="custom"
                         color="primary"
@@ -526,7 +583,18 @@ const renderReferenciasList = () => (
                     >
                         Nueva
                     </Button>
+                    <Button
+                        variant="outline"
+                        color="primary"
+                        size="xs"
+                        icon={<FaRegFilePdf className="w-3.5 h-3.5" />}
+                        onClick={handleOpenPdfModal}
+                        disabled={!entrevista || loadingReferencias}
+                    >
+                        Ver PDF
+                    </Button>
                 </div>
+            </div>
 
             {/* Cards */}
             <div className="space-y-2.5">
@@ -614,11 +682,41 @@ const renderReferenciasList = () => (
 
     // ─── Root ────────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-6">
-            {viewMode === 'list' && referencias && referencias.length > 0
-                ? renderReferenciasList()
-                : <div className="max-w-md mx-auto">{renderReferenciaSection()}</div>
-            }
-        </div>
+        <>
+            <div className="space-y-6">
+                {viewMode === 'list' && referencias && referencias.length > 0
+                    ? renderReferenciasList()
+                    : <div className="max-w-md mx-auto">{renderReferenciaSection()}</div>
+                }
+            </div>
+
+            {/* Modal del PDF */}
+            {isPdfModalOpen && (
+                <Modal
+                    isOpen={isPdfModalOpen}
+                    onClose={() => setIsPdfModalOpen(false)}
+                    title="Ficha de Entrevista"
+                    size="lg-tall"
+                >
+                    <div className="h-full">
+                        {isGeneratingPdf ? (
+                            <div className="flex items-center justify-center h-full">
+                                <p>Generando PDF...</p>
+                            </div>
+                        ) : pdfBlobUrl ? (
+                            <iframe
+                                src={pdfBlobUrl}
+                                className="w-full h-full border-0"
+                                title="Ficha de Entrevista"
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center h-full">
+                                <p>Error al cargar el PDF</p>
+                            </div>
+                        )}
+                    </div>
+                </Modal>
+            )}
+        </>
     )
 }

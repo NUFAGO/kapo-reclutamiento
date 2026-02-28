@@ -1,7 +1,7 @@
 
 export const GET_CONVOCATORIAS_QUERY = `
-  query GetConvocatorias($limit: Int, $offset: Int) {
-    convocatorias(limit: $limit, offset: $offset) {
+  query GetConvocatorias($limit: Int, $offset: Int, $filters: ConvocatoriaFilters) {
+    convocatorias(limit: $limit, offset: $offset, filters: $filters) {
       convocatorias {
         id
         requerimiento_personal_id

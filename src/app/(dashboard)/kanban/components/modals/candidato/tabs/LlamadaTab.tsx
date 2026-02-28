@@ -1,7 +1,6 @@
 'use client'
 
-import React from 'react'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AplicacionCandidato } from '@/app/(dashboard)/kanban/lib/kanban.types'
 import { Phone, Calendar, MapPin, Briefcase, User, DollarSign, FileText, MessageSquare, Save, Edit, File } from 'lucide-react'
 import { Input, Textarea, Select, Button, Modal } from '@/components/ui'
@@ -10,6 +9,8 @@ import type { SelectOption } from '@/components/ui'
 import { useEntrevistaLlamadaPorAplicacion, useCrearEntrevistaLlamada, useActualizarEntrevistaLlamada } from '@/hooks'
 import { useAuth } from '@/hooks'
 import { showSuccess, showError, TOAST_DURATIONS } from '@/lib/toast-utils'
+import { graphqlRequest } from '@/lib/graphql-client'
+import { GET_CONVOCATORIA_QUERY } from '@/graphql/queries/convocatorias.queries'
 import { EntrevistaLlamadaPdf } from '../pdfs/EntrevistaLlamadaPdf'
 import { pdf } from '@react-pdf/renderer'
 
@@ -164,7 +165,11 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
 
         setIsGeneratingPdf(true)
         try {
-            const pdfDoc = <EntrevistaLlamadaPdf aplicacion={aplicacion} entrevista={entrevista} />
+            // Buscar la convocatoria para obtener jefe_inmediato_nombre actualizado
+            const convocatoriaResponse = await graphqlRequest(GET_CONVOCATORIA_QUERY, { id: aplicacion.convocatoriaId });
+            const jefeInmediato = convocatoriaResponse.convocatoria?.detalle_staff_snapshot?.jefe_inmediato_nombre;
+
+            const pdfDoc = <EntrevistaLlamadaPdf aplicacion={aplicacion} entrevista={entrevista} jefeInmediato={jefeInmediato} />
             const blob = await pdf(pdfDoc).toBlob()
             const blobUrl = URL.createObjectURL(blob)
 

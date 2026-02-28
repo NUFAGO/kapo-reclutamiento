@@ -41,6 +41,7 @@ export interface Convocatoria {
 export interface UseConvocatoriasOptions {
   limit?: number
   offset?: number
+  filters?: any
   enabled?: boolean
 }
 
@@ -56,17 +57,17 @@ export interface UseConvocatoriasReturn {
  * Hook para obtener lista de convocatorias con paginación
  */
 export function useConvocatorias(options: UseConvocatoriasOptions = {}): UseConvocatoriasReturn {
-  const { limit = 20, offset = 0, enabled = true } = options
+  const { limit = 20, offset = 0, filters, enabled = true } = options
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['convocatorias', { limit, offset }],
+    queryKey: ['convocatorias', { limit, offset, filters }],
     queryFn: async () => {
       const response = await graphqlRequest<{
         convocatorias: {
           convocatorias: Convocatoria[]
           totalCount: number
         }
-      }>(GET_CONVOCATORIAS_QUERY, { limit, offset })
+      }>(GET_CONVOCATORIAS_QUERY, { limit, offset, filters })
       return response
     },
     enabled,

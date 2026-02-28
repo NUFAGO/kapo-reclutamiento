@@ -74,7 +74,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     // Clase base para todos los botones
-    const baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-lg font-medium shadow-sm hover:shadow transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+    const baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-lg font-medium shadow-sm hover:shadow transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
 
     // Función para generar clases CSS automáticamente para colores arbitrarios
     // Ejemplo: "random" → "bg-random-500/10 hover:bg-random-500/20 text-random-600 dark:text-random-400"

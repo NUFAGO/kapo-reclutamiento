@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Search, X, Eye, Link, FileText, Settings } from 'lucide-react';
-import { Button, DataTable } from '@/components/ui';
+import { Button, DataTable, Select } from '@/components/ui';
 import { Input } from '@/components/ui/input';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import ConvocatoriaView from './components/convocatoria-view';
@@ -21,26 +21,45 @@ export default function ConvocatoriasPage() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [existingFormConfig, setExistingFormConfig] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedEstado, setSelectedEstado] = useState<string>('');
 
   const limit = 10;
   const offset = (currentPage - 1) * limit;
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    // Aplicar filtros al servidor
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleEstadoChange = (value: string | null) => {
+    setSelectedEstado(value || '');
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const filters = searchQuery.trim() || selectedEstado ? {
+    ...(searchQuery.trim() && {
+      codigo_convocatoria: searchQuery,
+      cargo_nombre: searchQuery,
+      categoria_nombre: searchQuery,
+      especialidad_nombre: searchQuery
+    }),
+    ...(selectedEstado && { estado_convocatoria: selectedEstado })
+  } : undefined;
 
   // Hook para obtener convocatorias del backend
   const { convocatorias, loading, error, refetch, totalCount } = useConvocatorias({
     limit,
     offset,
+    filters,
     enabled: true
   });
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    // Buscador sin funcionalidad como solicitado
-  };
-
   const clearSearch = () => {
     setSearchQuery('');
+    setSelectedEstado('');
   };
-
 
   const handleViewConvocatoria = (convocatoria: Convocatoria) => {
     setSelectedConvocatoria(convocatoria);
@@ -321,20 +340,34 @@ export default function ConvocatoriasPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
             <Input
               type="text"
-              placeholder="Buscar convocatorias..."
+              placeholder="Busca por código o nombre del cargo"
               value={searchQuery}
               onChange={handleSearchChange}
               className="pl-10 text-xs h-8"
             />
           </div>
 
+          {/* Select Estado */}
+          <div className="w-48">
+            <Select
+              value={selectedEstado}
+              onChange={handleEstadoChange}
+              options={[
+                { value: 'ACTIVA', label: 'Activa' },
+                { value: 'FINALIZADA', label: 'Finalizada' },
+              ]}
+              placeholder="Filtrar por estado"
+              className="text-xs h-8"
+            />
+          </div>
+
           {/* Botón limpiar búsqueda */}
-          {searchQuery && (
+          {(searchQuery || selectedEstado) && (
             <Button
               onClick={clearSearch}
               variant="custom"
-              color="violet"
-              icon={<X className="h-4 w-4" />}
+              color="blue"
+
             >
               Limpiar
             </Button>

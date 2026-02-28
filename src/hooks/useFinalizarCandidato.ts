@@ -47,6 +47,37 @@ export function useFinalizarCandidato() {
             queryClient.invalidateQueries({ queryKey: ['aplicaciones'] })
             queryClient.invalidateQueries({ queryKey: ['candidatos'] })
             queryClient.invalidateQueries({ queryKey: ['convocatorias'] })
+
+            // Si la convocatoria se finalizó completamente, limpiar todas las aplicaciones del kanban con update optimista
+            if (data.convocatoria.estadoConvocatoria === 'FINALIZADA') {
+                const convocatoriaId = data.convocatoria.id
+
+                // Función para limpiar aplicaciones de una query específica
+                const limpiarAplicacionesConvocatoria = (queryKey: (string | undefined)[]) => {
+                    queryClient.setQueryData(queryKey, (oldData: any) => {
+                        if (!oldData?.getKanbanData) return oldData
+
+                        const newData = { ...oldData, getKanbanData: { ...oldData.getKanbanData } }
+
+                        // Filtrar aplicaciones de cada estado
+                        Object.keys(newData.getKanbanData).forEach(estado => {
+                            const columna = newData.getKanbanData[estado]
+                            if (columna.aplicaciones) {
+                                columna.aplicaciones = columna.aplicaciones.filter((app: any) => 
+                                    app.convocatoriaId !== convocatoriaId
+                                )
+                                columna.total = columna.aplicaciones.length
+                            }
+                        })
+
+                        return newData
+                    })
+                }
+
+                // Limpiar tanto para la convocatoria específica como para 'all'
+                limpiarAplicacionesConvocatoria(['kanban-data', convocatoriaId])
+                limpiarAplicacionesConvocatoria(['kanban-data', 'all'])
+            }
         },
         onError: (error) => {
             setIsExecuting(false)

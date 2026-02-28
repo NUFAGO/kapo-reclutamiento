@@ -142,7 +142,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
     // Report validation when data is loaded
     useEffect(() => {
         if (!loadingDebidaDiligencia) {
-            const isValid = !!existingDebidaDiligencia && selectedAction === 'ACEPTAR_CON_CONTROLES'
+            const isValid = !!existingDebidaDiligencia
             onValidationChange?.(isValid)
         }
     }, [existingDebidaDiligencia, loadingDebidaDiligencia, selectedAction, onValidationChange])
@@ -281,7 +281,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
                 criterios,
                 puntaje_total: puntajeTotal,
                 nivel_riesgo: nivelRiesgo as 'BAJO' | 'MODERADO' | 'ALTO' | 'CRITICO',
-                accion: selectedAction as 'NO_ESTABLECER' | 'SUSPENDER' | 'TERMINAR' | 'ACEPTAR_CON_CONTROLES' | undefined,
+                accion: selectedAction ? (selectedAction as 'NO_ESTABLECER' | 'SUSPENDER' | 'TERMINAR' | 'ACEPTAR_CON_CONTROLES') : undefined,
                 controles: controles.map(control => ({
                     criterio: control.control,
                     responsable: control.responsable,
