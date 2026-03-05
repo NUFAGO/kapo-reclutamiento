@@ -71,6 +71,12 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
         entrevistador_nombre: string
         observaciones: string
         resultado: string
+        // Nuevos campos opcionales
+        motivos_salida_empleo: string
+        licencia_conducir: 'SI' | 'NO' | 'TRAMITE' | undefined
+        reporte_infocorp: 'SI' | 'NO' | undefined
+        condicion_salud_funciones: string
+        restriccion_med_funciones: string
     }>({
         fecha_entrevista: new Date().toISOString().split('T')[0],
         disponibilidad_actual: '',
@@ -94,7 +100,13 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
         entrevistador_id: user?.id || '',
         entrevistador_nombre: user?.nombresA || '',
         observaciones: '',
-        resultado: ''
+        resultado: '',
+        // Nuevos campos opcionales
+        motivos_salida_empleo: '',
+        licencia_conducir: undefined,
+        reporte_infocorp: undefined,
+        condicion_salud_funciones: '',
+        restriccion_med_funciones: ''
     })
 
     // Cargar datos cuando existe entrevista
@@ -123,7 +135,13 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
                 entrevistador_id: entrevista.entrevistador_id,
                 entrevistador_nombre: entrevista.entrevistador_nombre,
                 observaciones: entrevista.observaciones,
-                resultado: entrevista.resultado
+                resultado: entrevista.resultado,
+                // Nuevos campos opcionales
+                motivos_salida_empleo: entrevista.motivos_salida_empleo ?? '',
+                licencia_conducir: entrevista.licencia_conducir as 'SI' | 'NO' | 'TRAMITE' | undefined,
+                reporte_infocorp: entrevista.reporte_infocorp as 'SI' | 'NO' | undefined,
+                condicion_salud_funciones: entrevista.condicion_salud_funciones ?? '',
+                restriccion_med_funciones: entrevista.restriccion_med_funciones ?? ''
             }
 
             setFormData(loadedData)
@@ -323,7 +341,17 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
                 entrevistador_id: formData.entrevistador_id,
                 entrevistador_nombre: formData.entrevistador_nombre,
                 observaciones: formData.observaciones,
-                resultado: formData.resultado
+                resultado: formData.resultado,
+                // Campos de versionado
+                version: versionado.version,
+                fecha_version: new Date(versionado.fechaVersion).toISOString(),
+                codigo: versionado.codigo,
+                // Nuevos campos opcionales
+                motivos_salida_empleo: formData.motivos_salida_empleo,
+                licencia_conducir: formData.licencia_conducir as 'SI' | 'NO' | 'TRAMITE',
+                reporte_infocorp: formData.reporte_infocorp as 'SI' | 'NO',
+                condicion_salud_funciones: formData.condicion_salud_funciones,
+                restriccion_med_funciones: formData.restriccion_med_funciones
             }
 
             // Preparar datos para actualizar (todos los campos modificables, sin aplicacionCandidatoId)
@@ -350,7 +378,17 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
                 entrevistador_id: formData.entrevistador_id,
                 entrevistador_nombre: formData.entrevistador_nombre,
                 observaciones: formData.observaciones,
-                resultado: formData.resultado
+                resultado: formData.resultado,
+                // Campos de versionado
+                version: versionado.version,
+                fecha_version: new Date(versionado.fechaVersion).toISOString(),
+                codigo: versionado.codigo,
+                // Nuevos campos opcionales
+                motivos_salida_empleo: formData.motivos_salida_empleo,
+                licencia_conducir: formData.licencia_conducir as 'SI' | 'NO' | 'TRAMITE',
+                reporte_infocorp: formData.reporte_infocorp as 'SI' | 'NO',
+                condicion_salud_funciones: formData.condicion_salud_funciones,
+                restriccion_med_funciones: formData.restriccion_med_funciones
             }
 
             if (entrevista) {
@@ -394,8 +432,32 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
         { value: 'ALTO', label: 'Alto' }
     ]
 
+    const versionado = {
+        codigo: 'FO-ADM-026',
+        version: '3',
+        fechaVersion: '2025-12-27'
+    }
+
+    const opcionesLicenciaConducir: SelectOption[] = [
+        { value: 'SI', label: 'Sí' },
+        { value: 'NO', label: 'No' },
+        { value: 'TRAMITE', label: 'En Trámite' }
+    ]
+
+    const opcionesReporteInfocorp: SelectOption[] = [
+        { value: 'SI', label: 'Sí' },
+        { value: 'NO', label: 'No' }
+    ]
+
     return (
         <div className="space-y-6">
+            {/* Información de Versionado - Muestra const al crear, datos del backend al editar */}
+            <div className="flex gap-6 mb-4 text-[11px] w-full justify-center" style={{ color: 'var(--text-secondary)' }}>
+                <span>Código: <label htmlFor="codigo" className=' p-1 rounded-[4px]'>{entrevista?.codigo || versionado.codigo}</label></span>
+                <span>Versión: <label htmlFor="version" className='px-3 py-1 rounded-[4px]'>{entrevista?.version || versionado.version}</label></span>
+                <span>Fecha de Versión: <label htmlFor="fecha-version" className=' p-1 rounded-[4px]'>{entrevista?.fecha_version ? new Date(entrevista.fecha_version).toLocaleDateString('es-ES') : versionado.fechaVersion}</label></span>
+            </div>
+
             {/* Información de la Entrevista */}
             <section>
                 <div className='flex items-center justify-between'>
@@ -817,6 +879,84 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
                             rows={3}
                             value={formData.resultado}
                             onChange={(e) => handleInputChange('resultado', e.target.value)}
+                            readOnly={!isEditMode && !!entrevista}
+                        />
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h3 className="text-xs uppercase font-medium mb-3 flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5" />
+                    Información Adicional del Candidato
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Motivos de la Salida del Último Empleo */}
+                    <div className="space-y-1 md:col-span-2">
+                        <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                            Motivos de salida del último empleo
+                        </label>
+                        <Textarea
+                            placeholder="¿Cuáles fueron los motivos de su salida del último empleo? Detalle las razones específicas."
+                            rows={3}
+                            value={formData.motivos_salida_empleo}
+                            onChange={(e) => handleInputChange('motivos_salida_empleo', e.target.value)}
+                            readOnly={!isEditMode && !!entrevista}
+                        />
+                    </div>
+
+                    {/* Licencia de Conducir */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                            Licencia de conducir
+                        </label>
+                        <Select
+                            options={opcionesLicenciaConducir}
+                            placeholder="Seleccionar estado"
+                            value={formData.licencia_conducir || ''}
+                            onChange={(value) => handleInputChange('licencia_conducir', value === '' ? undefined : value as 'SI' | 'NO' | 'TRAMITE')}
+                            disabled={!isEditMode && !!entrevista}
+                        />
+                    </div>
+
+                    {/* Reporte en Infocorp */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                            Reporte en Infocorp
+                        </label>
+                        <Select
+                            options={opcionesReporteInfocorp}
+                            placeholder="¿Tiene reportes?"
+                            value={formData.reporte_infocorp || ''}
+                            onChange={(value) => handleInputChange('reporte_infocorp', value === '' ? undefined : value as 'SI' | 'NO')}
+                            disabled={!isEditMode && !!entrevista}
+                        />
+                    </div>
+
+                    {/* Condición de Salud */}
+                    <div className="space-y-1 md:col-span-2">
+                        <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                            Condición de salud que pueda limitar funciones del puesto
+                        </label>
+                        <Textarea
+                            placeholder="¿Tiene alguna condición de salud que pueda limitar las funciones del puesto? Detalle cuál."
+                            rows={3}
+                            value={formData.condicion_salud_funciones}
+                            onChange={(e) => handleInputChange('condicion_salud_funciones', e.target.value)}
+                            readOnly={!isEditMode && !!entrevista}
+                        />
+                    </div>
+
+                    {/* Restricción Médica */}
+                    <div className="space-y-1 md:col-span-2">
+                        <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                            Restricción médica vigente (fracturas, heridas, lentes, etc.)
+                        </label>
+                        <Textarea
+                            placeholder="¿Tiene alguna restricción médica vigente? Detalle cuál (fracturas, heridas, lentes, etc.)."
+                            rows={3}
+                            value={formData.restriccion_med_funciones}
+                            onChange={(e) => handleInputChange('restriccion_med_funciones', e.target.value)}
                             readOnly={!isEditMode && !!entrevista}
                         />
                     </div>

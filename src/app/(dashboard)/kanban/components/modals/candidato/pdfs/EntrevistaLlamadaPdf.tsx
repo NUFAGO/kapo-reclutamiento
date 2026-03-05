@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
 
         fontFamily: 'Helvetica',
 
-        fontSize: 9,
+        fontSize: 8,
 
         lineHeight: 1.3,
 
@@ -103,9 +103,9 @@ const styles = StyleSheet.create({
 
         backgroundColor: '#f2f2f2', // Fondo gris claro
 
-        fontWeight: 'bold',
+        fontSize: 7,
 
-        fontSize: 8,
+        lineHeight: 1,
 
     },
 
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
 
         fontFamily: 'Helvetica-Bold',
 
-        fontSize: 8,
+        fontSize: 7,
 
     },
 
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
 
     mainTitle: {
 
-        fontSize: 12,
+        fontSize: 11,
 
         fontFamily: 'Helvetica-Bold',
 
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
 
         fontFamily: 'Helvetica-Bold',
 
-        fontSize: 6,
+        fontSize: 5,
 
         padding: 4,
 
@@ -219,7 +219,7 @@ const Checkbox = ({ checked, label }: { checked: boolean, label?: string }) => (
 
     <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
 
-        {label && <Text style={{ fontSize: 8, marginRight: 4 }}>{label}</Text>}
+        {label && <Text style={{ fontSize: 7, marginRight: 4 }}>{label}</Text>}
 
         <View style={styles.checkbox}>
 
@@ -283,11 +283,11 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                 <View style={[styles.table, { marginBottom: 5 }]}>
 
-                    <View style={[styles.tableRow, { height: 60 }]}>
+                    <View style={[styles.tableRow, { height: 45 }]}>
 
                         {/* Logo */}
 
-                        <View style={[styles.cell, { width: '40%', alignItems: 'center', justifyContent: 'center', padding: 2 }]}>
+                        <View style={[styles.cell, { width: '25%', alignItems: 'center', justifyContent: 'center', padding: 2 }]}>
 
                             <Image
 
@@ -301,7 +301,7 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                         {/* Título */}
 
-                        <View style={[styles.cell, { width: '60%', backgroundColor: '#f2f2f2', alignItems: 'center', justifyContent: 'center' }]}>
+                        <View style={[styles.cell, { width: '50%', backgroundColor: '#f2f2f2', alignItems: 'center', justifyContent: 'center' }]}>
 
                             <Text style={styles.mainTitle}>FICHA DE ENTREVISTA</Text>
 
@@ -309,11 +309,11 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                         {/* Datos ISO */}
 
-                        <View style={[styles.cellLast, { width: '20%', padding: 0 }]}>
+                        <View style={[styles.cellLast, { width: '25%', padding: 0 }]}>
 
-                            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', height: 20 }}>
+                            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', height: 15 }}>
 
-                                <View style={[styles.headerLabel, { width: '40%', borderRightWidth: 1, padding: 2, justifyContent: 'center', fontSize: 6 }]}>
+                                <View style={[styles.headerLabel, { width: '40%', borderRightWidth: 1, padding: 2, justifyContent: 'center' }]}>
 
                                     <Text>Código</Text>
 
@@ -321,15 +321,15 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                                 <View style={{ width: '60%', justifyContent: 'center', alignItems: 'center', fontSize: 6 }}>
 
-                                    <Text>FO-ADM-026</Text>
+                                    <Text>{entrevista.codigo || 'N/A'}</Text>
 
                                 </View>
 
                             </View>
 
-                            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', height: 20 }}>
+                            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', height: 15 }}>
 
-                                <View style={[styles.headerLabel, { width: '40%', borderRightWidth: 1, padding: 2, justifyContent: 'center', fontSize: 6 }]}>
+                                <View style={[styles.headerLabel, { width: '40%', borderRightWidth: 1, padding: 2, justifyContent: 'center' }]}>
 
                                     <Text>Versión</Text>
 
@@ -337,15 +337,15 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                                 <View style={{ width: '60%', justifyContent: 'center', alignItems: 'center', fontSize: 6 }}>
 
-                                    <Text>3</Text>
+                                    <Text>{entrevista.version || '1'}</Text>
 
                                 </View>
 
                             </View>
 
-                            <View style={{ flexDirection: 'row', height: 20 }}>
+                            <View style={{ flexDirection: 'row', height: 15 }}>
 
-                                <View style={[styles.headerLabel, { width: '40%', borderRightWidth: 1, padding: 2, justifyContent: 'center', fontSize: 6 }]}>
+                                <View style={[styles.headerLabel, { width: '40%', borderRightWidth: 1, padding: 2, justifyContent: 'center' }]}>
 
                                     <Text>Fecha</Text>
 
@@ -353,7 +353,7 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                                 <View style={{ width: '60%', justifyContent: 'center', alignItems: 'center', fontSize: 6 }}>
 
-                                    <Text>2022-08-08</Text>
+                                    <Text>{entrevista.fecha_version ? new Date(entrevista.fecha_version).toLocaleDateString('es-ES') : 'N/A'}</Text>
 
                                 </View>
 
@@ -423,11 +423,9 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                         </View>
 
-                        <View style={[styles.cellLast, { width: '25%', flexDirection: 'row', justifyContent: 'space-around' }]}>
+                        <View style={[styles.cellLast, { width: '25%' }]}>
 
-                            <Checkbox checked={true} label="SI" />
-
-                            <Checkbox checked={false} label="NO" />
+                            <Text>{aplicacion.candidato?.telefono}</Text>
 
                         </View>
 
@@ -567,40 +565,70 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                     </View>
 
-                    {/* Item 8 */}
-
+                    {/* Item 7.1 - Motivos de salida */}
                     <View style={styles.tableRow}>
-
                         <View style={[styles.cell, styles.headerLabel, { width: '40%' }]}>
-
-                            <Text>BUSCA ESTABILIDAD DE CUANTO TIEMPO COMO MINIMO?</Text>
-
+                            <Text>MOTIVOS DE LA SALIDA DEL ÚLTIMO EMPLEO O DEL QUE HAYA ESTADO MENOS TIEMPO</Text>
                         </View>
-
                         <View style={[styles.cellLast, { width: '60%' }]}>
-
-                            <Text>{entrevista.busca_estabilidad}</Text>
-
+                            <Text>{entrevista.motivos_salida_empleo || ''}</Text>
                         </View>
+                    </View>
 
+                    {/* Item 8 */}
+                    <View style={styles.tableRow}>
+                        <View style={[styles.cell, styles.headerLabel, { width: '40%' }]}>
+                            <Text>BUSCA ESTABILIDAD DE CUANTO TIEMPO COMO MINIMO?</Text>
+                        </View>
+                        <View style={[styles.cellLast, { width: '60%' }]}>
+                            <Text>{entrevista.busca_estabilidad}</Text>
+                        </View>
                     </View>
 
                     {/* Item 9 */}
-
                     <View style={styles.tableRow}>
-
                         <View style={[styles.cell, styles.headerLabel, { width: '40%' }]}>
-
                             <Text>¿CUALES SON SUS RETOS PROFESIONALES?        CORTO Y LARGO PLAZO</Text>
-
                         </View>
-
                         <View style={[styles.cellLast, { width: '60%' }]}>
-
                             <Text>{entrevista.retos_profesionales}</Text>
-
                         </View>
+                    </View>
 
+                    {/* Item 9.2 - Licencia de conducir y Reporte Infocorp */}
+                    <View style={styles.tableRow}>
+                        <View style={[styles.cell, styles.headerLabel, { width: '40%' }]}>
+                            <Text>LICENCIA DE CONDUCIR</Text>
+                        </View>
+                        <View style={[styles.cell, { width: '30%' }]}>
+                            <Text>{entrevista.licencia_conducir === 'SI' ? 'Sí' : entrevista.licencia_conducir === 'NO' ? 'No' : entrevista.licencia_conducir === 'TRAMITE' ? 'En Trámite' : ''}</Text>
+                        </View>
+                        <View style={[styles.cell, styles.headerLabel, { width: '30%' }]}>
+                            <Text>REPORTE EN INFOCORP</Text>
+                        </View>
+                        <View style={[styles.cellLast, { width: '30%' }]}>
+                            <Text>{entrevista.reporte_infocorp === 'SI' ? 'Sí' : entrevista.reporte_infocorp === 'NO' ? 'No' : ''}</Text>
+                        </View>
+                    </View>
+
+                    {/* Item 9.3 - Condición de salud */}
+                    <View style={styles.tableRow}>
+                        <View style={[styles.cell, styles.headerLabel, { width: '40%' }]}>
+                            <Text>¿TIENE ALGUNA CONDICIÓN DE SALUD QUE PUEDA LIMITAR EL DESEMPEÑO DE LAS FUNCIONES DEL PUESTO?</Text>
+                        </View>
+                        <View style={[styles.cellLast, { width: '60%', minHeight: 40 }]}>
+                            <Text>{entrevista.condicion_salud_funciones || ''}</Text>
+                        </View>
+                    </View>
+
+                    {/* Item 9.4 - Restricción médica */}
+                    <View style={styles.tableRow}>
+                        <View style={[styles.cell, styles.headerLabel, { width: '40%' }]}>
+                            <Text>¿TIENE ALGUNA RESTRICCIÓN MÉDICA VIGENTE? (FRACTURAS, HERIDAS, USO DE LENTES, ETC.)</Text>
+                        </View>
+                        <View style={[styles.cellLast, { width: '60%', minHeight: 40 }]}>
+                            <Text>{entrevista.restriccion_med_funciones || ''}</Text>
+                        </View>
                     </View>
 
                     {/* Item 10 */}
@@ -743,7 +771,7 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                         <View style={[styles.cellLast, { width: '70%', height: 40 }]}>
 
-                            <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 10 }}>{entrevista.resultado}</Text>
+                            <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 9 }}>{entrevista.resultado}</Text>
 
                         </View>
 

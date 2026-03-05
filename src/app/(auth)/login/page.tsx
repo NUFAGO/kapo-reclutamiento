@@ -67,27 +67,37 @@ function LoginForm() {
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-linear-to-br from-(--content-bg) via-(--content-bg) to-(--content-bg) px-4 py-12 transition-colors duration-300 overflow-hidden">
       {/* Fondo con gradiente sutil */}
-      <div className="absolute inset-0 bg-linear-to-br from-[#2563eb]/2 via-transparent to-[#0d9488]/2 dark:from-[#2563eb]/4 dark:to-[#0d9488]/4"></div>
+      <div className="absolute inset-0 bg-linear-to-br from-[#7c3aed]/2 via-transparent to-[#059669]/1 dark:from-[#7c3aed]/4 dark:to-[#059669]/2"></div>
 
       {/* Manchas decorativas suaves y orgánicas - sutiles */}
-      <div className="absolute -right-32 -top-32 h-96 w-96 rounded-[60%_40%_30%_70%/60%_30%_70%_40%] bg-[#2563eb] opacity-[0.06] blur-3xl dark:opacity-[0.08]"></div>
-      <div className="absolute -left-32 -bottom-32 h-96 w-96 rounded-[30%_60%_70%_40%/50%_60%_30%_60%] bg-[#0d9488] opacity-[0.06] blur-3xl dark:opacity-[0.08]"></div>
-      <div className="absolute right-1/3 top-1/4 h-72 w-72 rounded-[40%_60%_60%_40%/60%_30%_70%_40] bg-[#1e40af] opacity-[0.05] blur-2xl dark:opacity-[0.07]"></div>
-      <div className="absolute left-1/3 bottom-1/4 h-80 w-80 rounded-[50%_50%_50%_50%/60%_40%_60%_40] bg-[#14b8a6] opacity-[0.05] blur-2xl dark:opacity-[0.07]"></div>
+      <div className="absolute -right-32 -top-32 h-96 w-96 rounded-[60%_40%_30%_70%/60%_30%_70%_40%] bg-[#7c3aed] opacity-[0.06] blur-3xl dark:opacity-[0.08]"></div>
+      <div className="absolute -left-32 -bottom-32 h-96 w-96 rounded-[30%_60%_70%_40%/50%_60%_30%_60%] bg-[#7c3aed] opacity-[0.06] blur-3xl dark:opacity-[0.08]"></div>
+      <div className="absolute right-1/3 top-1/4 h-72 w-72 rounded-[40%_60%_60%_40%/60%_30%_70%_40] bg-[#5b21b6] opacity-[0.05] blur-2xl dark:opacity-[0.07]"></div>
+      <div className="absolute left-1/3 bottom-1/4 h-80 w-80 rounded-[50%_50%_50%_50%/60%_40%_60%_40] bg-[#10b981] opacity-[0.05] blur-2xl dark:opacity-[0.07]"></div>
 
       {/* Contenedor principal con mejor espaciado */}
       <div className="relative z-10 w-full max-w-md mx-auto">
         {/* Card principal con mejor elevación */}
         <div className="rounded-2xl bg-card-bg card-shadow transition-all duration-300 overflow-hidden backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 shadow-xl">
           {/* Header con logo */}
-          <div className="bg-linear-to-br from-[#2563eb]/5 to-[#0d9488]/5 px-8 pt-10 pb-8">
+          <div className="bg-linear-to-br from-[#7c3aed]/5 to-[#059669]/5 px-8 pt-10 pb-8">
             <div className="flex items-center justify-center gap-6">
+              <div className="relative flex-shrink-0">
+                <Image
+                  src="/logo_reclutamiento.png"
+                  alt="Kapo Reclutamiento"
+                  width={80}
+                  height={45}
+                  className="object-contain"
+                  priority
+                />
+              </div>
               <div className="text-center">
-                <h1 className="text-3xl font-bold tracking-tight uppercase bg-linear-to-r from-[#1e40af] to-[#0f766e] bg-clip-text text-transparent">
-                  Activos Fijos
+                <h1 className="text-3xl font-bold tracking-tight uppercase bg-linear-to-r from-[#5b21b6] to-[#064e3b] bg-clip-text text-transparent">
+                  Kapo
                 </h1>
-                <p className="text-xs font-bold mt-1 uppercase bg-linear-to-r from-[#1e3a8a] to-[#0d9488] bg-clip-text text-transparent">
-                  Sistema de Gestión
+                <p className="text-xs font-bold mt-1 uppercase bg-linear-to-r from-[#5b21b6] to-[#059669] bg-clip-text text-transparent">
+                  Reclutamiento
                 </p>
               </div>
             </div>
@@ -133,7 +143,7 @@ function LoginForm() {
             <div className="space-y-3">
               <Button
                 type="submit"
-                className="w-full bg-linear-to-r from-[#2563eb] to-[#0d9488] hover:from-[#1d4ed8] hover:to-[#0f766e] text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-linear-to-r from-[#7c3aed] to-[#059669] hover:from-[#5b21b6] hover:to-[#064e3b] text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
                 {isLoading ? (

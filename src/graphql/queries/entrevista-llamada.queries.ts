@@ -25,6 +25,14 @@ const ENTREVISTA_LLAMADA_FIELDS = `
   entrevistador_nombre
   observaciones
   resultado
+  version
+  fecha_version
+  codigo
+  motivos_salida_empleo
+  licencia_conducir
+  reporte_infocorp
+  condicion_salud_funciones
+  restriccion_med_funciones
   created_at
   updated_at
 `

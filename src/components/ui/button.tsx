@@ -66,11 +66,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Tamaños con texto apropiado
     const sizes = {
-      default: "h-8 px-3 py-1.5 text-xs gap-1.5",
-      sm: "h-9 rounded-md px-3 text-sm",
-      lg: "h-11 rounded-md px-8 text-base",
+      default: "h-6 px-3 py-1.5 text-xs gap-1.5",
+      sm: "h-7 rounded-md px-3 text-xs",
+      lg: "h-7 rounded-md px-8 text-xs",
       xs: variant === "subtle" ? "" : "h-8 px-3 py-1.5 text-xs gap-1.5",
-      icon: "h-8 w-8",
+      icon: "h-7 w-7",
     }
 
     // Clase base para todos los botones

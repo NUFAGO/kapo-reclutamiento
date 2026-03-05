@@ -15,6 +15,21 @@ const ESTADOS_ARCHIVADOS = [
 const esEstadoArchivado = (estado: EstadoKanban): boolean => {
     return ESTADOS_ARCHIVADOS.includes(estado as any)
 }
+
+// TODO: Implementación temporal de permisos hardcodeados hasta que se desarrolle el microservicio de roles y permisos.
+// Solo estos roles tienen potestad para usar los botones de avanzar, rechazar, etc. en el kanban.
+// Después se cambiará a un sistema dinámico de permisos.
+const ROLES_PERMITIDOS_KANBAN = [
+    '68165a10af28062bf0e35b10', // Gerente
+    '680fec34107eb097a1ad6c16', // Analista de Capital Humano
+    '67d889bc33ff5c767d933397'  // Asistente de Gerencia
+] as const
+
+// Función para verificar si el usuario tiene permisos para usar los botones del kanban
+const tienePermisosKanban = (userRoleId?: string): boolean => {
+    return userRoleId ? ROLES_PERMITIDOS_KANBAN.includes(userRoleId as any) : false
+}
+
 import { RecepcionCVTab } from './tabs/RecepcionCVTab'
 import { LlamadaTab } from './tabs/LlamadaTab'
 import { PrimeraEntrevistaTab } from './tabs/PrimeraEntrevistaTab'
@@ -403,6 +418,8 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
         // Determinar el estado objetivo según el estado actual
         const estadoActual = aplicacion.estadoKanban
         const estadosParaPosibles: readonly EstadoKanban[] = [
+            KANBAN_ESTADOS.PROGRAMAR_1RA_ENTREVISTA,
+            KANBAN_ESTADOS.PROGRAMAR_2DA_ENTREVISTA,
             KANBAN_ESTADOS.REFERENCIAS,
             KANBAN_ESTADOS.EVALUACION_ANTISOBORNO,
             KANBAN_ESTADOS.APROBACION_GERENCIA,
@@ -720,7 +737,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                         size="xs"
                         icon={<XCircle className="w-4 h-4" />}
                         onClick={handleRechazar}
-                        disabled={loadingCambioEstado || loadingReactivacion}
+                        disabled={loadingCambioEstado || loadingReactivacion || !tienePermisosKanban(user?.role?.id)}
                     >
                         {loadingCambioEstado || loadingReactivacion ? 'Procesando...' : 'Descartar'}
                     </Button>
@@ -732,7 +749,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                         size="xs"
                         icon={<CheckCircle className="w-4 h-4" />}
                         onClick={handleReactivar}
-                        disabled={loadingCambioEstado || loadingReactivacion}
+                        disabled={loadingCambioEstado || loadingReactivacion || !tienePermisosKanban(user?.role?.id)}
                     >
                         {loadingReactivacion ? 'Reactivando...' : 'Reactivar'}
                     </Button>
@@ -751,7 +768,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                                 handleAprobar()
                             }
                         }}
-                        disabled={loadingCambioEstado || loadingReactivacion}
+                        disabled={loadingCambioEstado || loadingReactivacion || !tienePermisosKanban(user?.role?.id)}
                     >
                         {loadingCambioEstado ? 'Procesando...' : getTextoBotonAprobar(aplicacion.estadoKanban)}
                     </Button>

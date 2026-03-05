@@ -11,6 +11,7 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const [userName, setUserName] = useState<string>('');
+  const [userRole, setUserRole] = useState<string>('');
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -23,6 +24,7 @@ export function Header() {
   useEffect(() => {
     if (user) {
       setUserName(user.nombresA || user.usuario || 'Usuario');
+      setUserRole(user.role?.nombre || 'Sin rol');
     }
   }, [user]);
 
@@ -56,8 +58,9 @@ export function Header() {
               {userName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-col text-xs hidden md:flex">
-              <span className="text-text-primary text-center font-semibold">
+              <span className="flex flex-col text-text-primary text-center font-semibold">
                 {userName}
+                <span className="font-normal text-center">{userRole}</span>
               </span>
             </div>
           </li>

@@ -45,6 +45,14 @@ export interface EntrevistaLlamada {
   entrevistador_nombre: string
   observaciones: string
   resultado: string
+  version?: string
+  fecha_version?: string
+  codigo?: string
+  motivos_salida_empleo?: string
+  licencia_conducir?: string
+  reporte_infocorp?: string
+  condicion_salud_funciones?: string
+  restriccion_med_funciones?: string
   created_at: string
   updated_at: string
 }
@@ -74,6 +82,14 @@ export interface CrearEntrevistaLlamadaInput {
   entrevistador_nombre: string
   observaciones: string
   resultado: string
+  version?: string
+  fecha_version?: string
+  codigo?: string
+  motivos_salida_empleo?: string
+  licencia_conducir?: string
+  reporte_infocorp?: string
+  condicion_salud_funciones?: string
+  restriccion_med_funciones?: string
 }
 
 export interface ActualizarEntrevistaLlamadaInput {
@@ -101,6 +117,14 @@ export interface ActualizarEntrevistaLlamadaInput {
   entrevistador_nombre?: string
   observaciones?: string
   resultado?: string
+  version?: string
+  fecha_version?: string
+  codigo?: string
+  motivos_salida_empleo?: string
+  licencia_conducir?: string
+  reporte_infocorp?: string
+  condicion_salud_funciones?: string
+  restriccion_med_funciones?: string
 }
 
 /**

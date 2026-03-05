@@ -12,6 +12,7 @@ import { useFileUpload, UPLOAD_CONFIGS } from '@/hooks/useFileUpload';
 import { normalizeText, similarity, nameSimilarityAdvanced, totalSimilarity } from '@/utils/similarity';
 import Lottie from 'lottie-react';
 import alarmClockData from '@/assets/alarm-clock.json';
+import { FaExclamation } from "react-icons/fa";
 
 interface CampoFormulario {
   id: string;
@@ -745,7 +746,7 @@ function FormField({ campo, value, onChange, isTerminosField = false, dniExists,
 
   if (campo.tipo === 'checkbox') {
     return (
-      <div className={`flex items-start gap-3 group text-xs`}>
+      <div className={`flex items-start gap-3  text-xs`}>
         <div className="flex items-center h-6">
           <input
             type="checkbox"
@@ -760,6 +761,20 @@ function FormField({ campo, value, onChange, isTerminosField = false, dniExists,
           {campo.etiqueta}
           {campo.requerido && <span className="text-red-500 ml-1">*</span>}
         </label>
+
+             <div className="relative">
+               <div className="group">
+                <FaExclamation
+                  className="w-4 h-4 text-black-500 cursor-help bg-gray-600/20 rounded-full p-1"
+                />
+
+                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg px-3 py-2 max-w-xl shadow-lg z-10">
+                  Tus datos personales serán utilizados únicamente para el proceso de selección de personal en INACONS SRL.<br />
+                  Los datos se almacenan de forma segura en nuestros servidores y no se comparten con terceros sin tu consentimiento expreso.
+                  <div className="absolute top-full left-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                </div>
+              </div>
+             </div>
       </div>
     );
   }

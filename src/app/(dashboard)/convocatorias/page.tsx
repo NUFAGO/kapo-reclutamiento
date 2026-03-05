@@ -231,23 +231,20 @@ export default function ConvocatoriasPage() {
       }
     },
     {
-      key: 'vacantes',
-      header: 'Vacantes',
-      render: (value: number) => (
-        <span className="text-xs bg-blue-300/20 dark:bg-blue-100/20 text-blue-400 dark:text-blue-200 px-2 py-1 rounded">
-          {value}
-        </span>
-      )
-    },
-    {
-      key: 'empresa_nombre',
-      header: 'Empresa',
-      className: 'text-left text-xs',
-      render: (value: string) => (
-        <div className="line-clamp-2">
-          {value || 'No especificada'}
-        </div>
-      )
+      key: 'ganadores_vacantes',
+      header: 'Asignados/Vacantes',
+      render: (value: any, row: Convocatoria) => {
+        const ganadores = row.ganadores_ids ? row.ganadores_ids.length : 0;
+        const vacantes = row.vacantes;
+        const isFull = ganadores === vacantes;
+        const bgColor = isFull ? 'bg-green-300/20' : 'bg-red-300/20';
+        const textColor = isFull ? 'text-green-400 dark:text-green-200' : 'text-orange-400 dark:text-orange-200';
+        return (
+          <span className={`text-xs ${bgColor} ${textColor} px-2 py-1 rounded`}>
+            {ganadores}/{vacantes}
+          </span>
+        );
+      }
     },
     {
       key: 'obra_nombre',
