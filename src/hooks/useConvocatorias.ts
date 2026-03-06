@@ -36,6 +36,9 @@ export interface Convocatoria {
   fecha_creacion: string
   fecha_actualizacion: string
   ganadores_ids: string[]
+  formularioConfig?: {
+    urlPublico?: string
+  }
 }
 
 export interface UseConvocatoriasOptions {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Plus, Search, X, Eye, Link, FileText, Settings } from 'lucide-react';
 import { Button, DataTable, Select } from '@/components/ui';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import ConvocatoriaPdf from './components/convocatoria-pdf';
 import FormularioConfigModal from './components/convocatoria-form';
 import { useConvocatorias, type Convocatoria } from '@/hooks';
 import { graphqlRequest } from '@/lib/graphql-client';
+import { getPublicFormUrl } from '@/lib/utils';
+import toast from 'react-hot-toast';
 import { CREAR_FORMULARIO_CONFIG_MUTATION, ACTUALIZAR_FORMULARIO_CONFIG_MUTATION } from '@/graphql/mutations';
 import { OBTENER_FORMULARIO_CONFIG_QUERY } from '@/graphql/queries';
 
@@ -20,6 +22,7 @@ export default function ConvocatoriasPage() {
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [existingFormConfig, setExistingFormConfig] = useState<any>(null);
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEstado, setSelectedEstado] = useState<string>('');
 
@@ -237,8 +240,8 @@ export default function ConvocatoriasPage() {
         const ganadores = row.ganadores_ids ? row.ganadores_ids.length : 0;
         const vacantes = row.vacantes;
         const isFull = ganadores === vacantes;
-        const bgColor = isFull ? 'bg-green-300/20' : 'bg-red-300/20';
-        const textColor = isFull ? 'text-green-400 dark:text-green-200' : 'text-orange-400 dark:text-orange-200';
+        const bgColor = isFull ? 'bg-green-300/20 dark:bg-green-500/10' : 'bg-red-300/20 dark:bg-red-500/10';
+        const textColor = isFull ? 'text-green-400 dark:text-green-400' : 'text-orange-400 dark:text-orange-400';
         return (
           <span className={`text-xs ${bgColor} ${textColor} px-2 py-1 rounded`}>
             {ganadores}/{vacantes}
@@ -302,14 +305,32 @@ export default function ConvocatoriasPage() {
           >
             <Settings className="h-3.5 w-3.5" />
           </Button>
-          <Button
-            variant="subtle"
-            color="primary"
-            size="icon"
-            title="Abrir enlace"
-          >
-            <Link className="h-3.5 w-3.5" />
-          </Button>
+          {row.formularioConfig?.urlPublico && (
+            <Button
+              variant="subtle"
+              color="primary"
+              size="icon"
+              title="Click para copiar, doble click para abrir"
+              onClick={() => {
+                const url = getPublicFormUrl(row.formularioConfig?.urlPublico || '');
+                if (copyTimeoutRef.current) {
+                  clearTimeout(copyTimeoutRef.current);
+                  copyTimeoutRef.current = null;
+                  // Double click: open link
+                  window.open(url, '_blank');
+                } else {
+                  // Single click: copy after delay
+                  copyTimeoutRef.current = setTimeout(() => {
+                    navigator.clipboard.writeText(url);
+                    toast.success('URL copiada al portapapeles');
+                    copyTimeoutRef.current = null;
+                  }, 300);
+                }
+              }}
+            >
+              <Link className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       )
     }
@@ -324,7 +345,7 @@ export default function ConvocatoriasPage() {
             Convocatorias
           </h1>
           <p className="text-xs text-text-secondary mt-0.5">
-            Gestión de todos los proyectos con convocatorias
+            Gestión de convocatorias de personal
           </p>
         </div>
       </div>

@@ -25,6 +25,9 @@ export const GET_CONVOCATORIAS_QUERY = `
         fecha_creacion
         fecha_actualizacion
         ganadores_ids
+        formularioConfig {
+          urlPublico
+        }
       }
       totalCount
     }
@@ -56,6 +59,9 @@ export const GET_CONVOCATORIA_QUERY = `
       fecha_creacion
       fecha_actualizacion
       ganadores_ids
+      formularioConfig {
+        urlPublico
+      }
     }
   }
 `
@@ -85,6 +91,9 @@ export const GET_CONVOCATORIA_POR_REQUERIMIENTO_QUERY = `
       fecha_creacion
       fecha_actualizacion
       ganadores_ids
+      formularioConfig {
+        urlPublico
+      }
     }
   }
 `
