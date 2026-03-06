@@ -1,11 +1,14 @@
+'use client';
 
-import DashboardLayout from './(dashboard)/layout';
-import DashboardPage from './(dashboard)/page';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
-  return (
-    <DashboardLayout>
-      <DashboardPage />
-    </DashboardLayout>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/kanban');
+  }, [router]);
+
+  return null;
 }

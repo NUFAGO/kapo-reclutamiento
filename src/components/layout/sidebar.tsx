@@ -19,11 +19,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-  {
-    name: 'Dashboard',
-    href: '/',
-    icon: LayoutDashboard,
-  },
+  // {
+  //   name: 'Dashboard',
+  //   href: '/',
+  //   icon: LayoutDashboard,
+  // },
   {
     name: 'Kanban',
     href: '/kanban',
