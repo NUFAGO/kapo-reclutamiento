@@ -5,7 +5,7 @@
  * Flujo: Importado por componentes, hooks, servicios → Type safety
  *
  * Contendrá:
- * - Activo: Interface para activos fijos
+ * - Candidato: Interface para candidatos
  * - Categoria: Interface para categorías
  * - Usuario: Interface para usuarios
  * - [Futuro] Más tipos específicos del negocio

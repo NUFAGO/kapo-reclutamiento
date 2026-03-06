@@ -12,8 +12,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Activos Fijos - Sistema de Gestión',
-  description: 'Sistema completo para la gestión de activos fijos',
+  title: 'Kapo Reclutamiento',
+  description: 'Sistema completo para el reclutamiento de personal',
   manifest: '/manifest.json',
 };
 

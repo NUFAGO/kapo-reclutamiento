@@ -10,7 +10,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
           <p className="text-sm text-text-secondary mt-1">
-            Bienvenido al sistema de gestión de activos fijos
+            Bienvenido al sistema de reclutamiento Kapo
           </p>
         </div>
       </div>
