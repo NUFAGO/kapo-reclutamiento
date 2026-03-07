@@ -363,6 +363,14 @@ export default function PostularPage() {
       }
     });
 
+    // Validación específica para CV o documento requerido
+    const hasCVField = config.campos.some(campo => campo.tipo === 'file' && (campo.etiqueta.toLowerCase().includes('cv') || campo.etiqueta.toLowerCase().includes('currículum') || campo.etiqueta.toLowerCase().includes('curriculum') || campo.etiqueta.toLowerCase().includes('documento')));
+    if (hasCVField) {
+      const cvField = config.campos.find(campo => campo.tipo === 'file' && (campo.etiqueta.toLowerCase().includes('cv') || campo.etiqueta.toLowerCase().includes('currículum') || campo.etiqueta.toLowerCase().includes('curriculum') || campo.etiqueta.toLowerCase().includes('documento')));
+      if (cvField && (!formData[cvField.nombre] || (Array.isArray(formData[cvField.nombre]) && formData[cvField.nombre].length === 0))) {
+      }
+    }
+
     if (errors.length > 0) {
       toast.error(errors.join('\n'));
       setSubmitting(false);
@@ -634,7 +642,7 @@ export default function PostularPage() {
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl border border-gray-200">
-          <form onSubmit={handleSubmit} className="p-6 sm:p-8">
+          <form onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
             {/* Campo honeypot oculto para detectar bots */}
             <input
               type="text"

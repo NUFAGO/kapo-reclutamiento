@@ -434,8 +434,8 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
 
     const versionado = {
         codigo: 'FO-ADM-026',
-        version: '3',
-        fechaVersion: '2025-12-27'
+        version: '4',
+        fechaVersion: '2026-03-03'
     }
 
     const opcionesLicenciaConducir: SelectOption[] = [
@@ -455,7 +455,7 @@ export function LlamadaTab({ aplicacion, onValidationChange, viewOnly = false }:
             <div className="flex gap-6 mb-4 text-[11px] w-full justify-center" style={{ color: 'var(--text-secondary)' }}>
                 <span>Código: <label htmlFor="codigo" className=' p-1 rounded-[4px]'>{entrevista?.codigo || versionado.codigo}</label></span>
                 <span>Versión: <label htmlFor="version" className='px-3 py-1 rounded-[4px]'>{entrevista?.version || versionado.version}</label></span>
-                <span>Fecha de Versión: <label htmlFor="fecha-version" className=' p-1 rounded-[4px]'>{entrevista?.fecha_version ? new Date(entrevista.fecha_version).toLocaleDateString('es-ES') : versionado.fechaVersion}</label></span>
+                <span>Fecha de Versión: <label htmlFor="fecha-version" className=' p-1 rounded-[4px]'>{entrevista?.fecha_version ? entrevista.fecha_version.split('T')[0] : versionado.fechaVersion}</label></span>
             </div>
 
             {/* Información de la Entrevista */}

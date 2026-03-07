@@ -224,6 +224,8 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
     // Hook para obtener convocatorias disponibles
     const { convocatorias, loading: loadingConvocatorias } = useConvocatorias({ limit: 100 })
 
+    const convocatoriasActivas = convocatorias.filter(c => c.estado_convocatoria === 'ACTIVA')
+
     // Hook para finalizar candidato con protección de doble envío
     const { finalizarCandidato, isLoading: isLoadingFinalizada } = useFinalizarCandidato()
 
@@ -355,13 +357,17 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                     const { success, aplicacion: aplicacionActualizada, candidato, convocatoria, personalId } = resultado
                     
                     if (success) {
-                        showSuccess(`Candidato finalizado correctamente. Empleado creado: ${personalId}`, { duration: TOAST_DURATIONS.NORMAL })
+                        showSuccess(`Candidato finalizado correctamente`, { duration: TOAST_DURATIONS.NORMAL })
                         console.log('Entidades afectadas:', {
                             aplicacionActualizada,
                             candidatoActualizado: candidato,
                             convocatoriaActualizada: convocatoria,
                             personalId
                         })
+
+                        // Invalidar cache de convocatorias para refrescar selects
+                        queryClient.invalidateQueries({ queryKey: ['convocatorias'] })
+
                         onClose()
                         if (onAplicacionStateChanged) {
                             setTimeout(() => onAplicacionStateChanged(aplicacion.id, KANBAN_ESTADOS.FINALIZADA, true), 300)
@@ -650,7 +656,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                                     isLoading={loadingConvocatorias}
                                     showSearchIcon={true}
                                     options={[
-                                        ...convocatorias.map((convocatoria) => ({
+                                        ...convocatoriasActivas.map((convocatoria) => ({
                                             value: convocatoria.id,
                                             label: `${convocatoria.cargo_nombre || 'Sin cargo'} ${convocatoria.especialidad_nombre ? `(${convocatoria.especialidad_nombre})` : ''} - ${convocatoria.prioridad}`.trim()
                                         }))
@@ -857,7 +863,7 @@ export default function CandidateModal({ isOpen, onClose, aplicacion, headerBack
                     finalizarCandidato(aplicacion.id, user?.id, {
                         onSuccess: (resultado: any) => {
                             console.log('[FRONTEND] Finalización exitosa:', resultado);
-                            showSuccess(`Candidato finalizado correctamente. Empleado creado: ${resultado.personalId}`, { duration: TOAST_DURATIONS.NORMAL });
+                            showSuccess(`Candidato finalizado correctamente. Empleado creado`, { duration: TOAST_DURATIONS.NORMAL });
                             setShowFinalizeModal(false);
                             onClose();
                             if (onAplicacionStateChanged) {

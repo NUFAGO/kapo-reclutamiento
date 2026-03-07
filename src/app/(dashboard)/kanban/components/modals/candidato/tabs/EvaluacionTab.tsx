@@ -36,9 +36,9 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
     ]
 
     // Estado para fechas y evaluador
-    const [fechaAprobacion, setFechaAprobacion] = useState(new Date().toISOString().split('T')[0])
-    const [fechaEvaluacion, setFechaEvaluacion] = useState(new Date().toISOString().split('T')[0])
-    const [version, setVersion] = useState(1)
+    const [fechaAprobacion, setFechaAprobacion] = useState('2026-03-03')
+    const [fechaEvaluacion, setFechaEvaluacion] = useState('2026-03-03')
+    const [version, setVersion] = useState(3)
 
     // Estado para evaluador (simplificado como en otras tabs)
     const [evaluadorNombre, setEvaluadorNombre] = useState('')
@@ -46,26 +46,27 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
     // Código hardcoded
     const codigo = 'FO-ADM-018'
 
-    // Estado para criterios de evaluación
+    // Estado para criterios de evaluación-si se agrega agrgar numeros medios para mantener orden
     const [criterios, setCriterios] = useState<{
         [key: string]: { ponderacion: number; respuesta: 'SI' | 'NO' | 'NA' | '', puntaje: number }
     }>({
-        item01: { ponderacion: 1, respuesta: '', puntaje: 0 },
-        item02: { ponderacion: 1, respuesta: '', puntaje: 0 },
-        item03: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item04: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item05: { ponderacion: 1, respuesta: '', puntaje: 0 },
-        item06: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item07: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item08: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item09: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item10: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item11: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item12: { ponderacion: 2, respuesta: '', puntaje: 0 },
-        item13: { ponderacion: 1, respuesta: '', puntaje: 0 },
-        item14: { ponderacion: 1, respuesta: '', puntaje: 0 },
-        item15: { ponderacion: 1, respuesta: '', puntaje: 0 },
-        item16: { ponderacion: 2, respuesta: '', puntaje: 0 }
+        item01: { ponderacion: 1, respuesta: '', puntaje: 0 },  //1 
+        item02: { ponderacion: 1, respuesta: '', puntaje: 0 },  //2
+        item03: { ponderacion: 2, respuesta: '', puntaje: 0 },  //3
+        item04: { ponderacion: 2, respuesta: '', puntaje: 0 },  //4
+        item05: { ponderacion: 1, respuesta: '', puntaje: 0 },  //5
+        item06: { ponderacion: 2, respuesta: '', puntaje: 0 },  //6
+        item07: { ponderacion: 2, respuesta: '', puntaje: 0 },  //7
+        item08: { ponderacion: 2, respuesta: '', puntaje: 0 },  //8
+        item09: { ponderacion: 2, respuesta: '', puntaje: 0 },  //9
+        item10: { ponderacion: 2, respuesta: '', puntaje: 0 },  //10
+        item11: { ponderacion: 2, respuesta: '', puntaje: 0 },  //11
+        item12: { ponderacion: 2, respuesta: '', puntaje: 0 },  //12
+        item13: { ponderacion: 1, respuesta: '', puntaje: 0 },  //13
+        'item13.1': { ponderacion: 2, respuesta: '', puntaje: 0 }, // Nueva pregunta: antecedente_socio_negocio, enumerada como 14
+        item14: { ponderacion: 1, respuesta: '', puntaje: 0 },  //15
+        item15: { ponderacion: 1, respuesta: '', puntaje: 0 },  //16
+        item16: { ponderacion: 2, respuesta: '', puntaje: 0 }   //17
     })
 
     // Estado para puntaje total (calculado)
@@ -78,6 +79,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
     const [originalData, setOriginalData] = useState<{
         fechaAprobacion: string
         fechaEvaluacion: string
+        version: number
         evaluadorNombre: string
         selectedAction: string
         criterios: typeof criterios
@@ -152,7 +154,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
         if (existingDebidaDiligencia) {
             setFechaAprobacion(existingDebidaDiligencia.fecha_aprobacion ? new Date(existingDebidaDiligencia.fecha_aprobacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
             setFechaEvaluacion(existingDebidaDiligencia.fecha_evaluacion ? new Date(existingDebidaDiligencia.fecha_evaluacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
-            setVersion(existingDebidaDiligencia.created_at ? 1 : 1) // TODO: Implementar versionado
+            setVersion(existingDebidaDiligencia.version || 3)
             setEvaluadorNombre(existingDebidaDiligencia.nombre_evaluador)
             setSelectedAction(existingDebidaDiligencia.accion || '')
 
@@ -179,6 +181,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
             setOriginalData({
                 fechaAprobacion,
                 fechaEvaluacion,
+                version,
                 evaluadorNombre,
                 selectedAction,
                 criterios: criteriosLoaded,
@@ -245,6 +248,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
         if (originalData) {
             setFechaAprobacion(originalData.fechaAprobacion)
             setFechaEvaluacion(originalData.fechaEvaluacion)
+            setVersion(originalData.version)
             setEvaluadorNombre(originalData.evaluadorNombre)
             setSelectedAction(originalData.selectedAction)
             setCriterios(originalData.criterios)
@@ -278,6 +282,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
                 nombre_evaluador: evaluadorNombre || user?.nombresA || 'Usuario no identificado',
                 fecha_aprobacion: fechaAprobacion || undefined,
                 fecha_evaluacion: fechaEvaluacion,
+                version,
                 criterios,
                 puntaje_total: puntajeTotal,
                 nivel_riesgo: nivelRiesgo as 'BAJO' | 'MODERADO' | 'ALTO' | 'CRITICO',
@@ -310,6 +315,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
             setOriginalData({
                 fechaAprobacion,
                 fechaEvaluacion,
+                version,
                 evaluadorNombre,
                 selectedAction,
                 criterios,
@@ -363,7 +369,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
             errors.push('Evaluador')
         }
 
-        // Verificar que todos los 16 criterios estén seleccionados
+        // Verificar que todos los 17 criterios estén seleccionados
         const criteriosKeys = Object.keys(criterios) as Array<keyof typeof criterios>
         const missingCriterios = criteriosKeys.filter(key => !criterios[key].respuesta)
         if (missingCriterios.length > 0) {
@@ -403,7 +409,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
         const ponderaciones: { [key: string]: number } = {
             item01: 1, item02: 1, item03: 2, item04: 2, item05: 1, item06: 2,
             item07: 2, item08: 2, item09: 2, item10: 2, item11: 2, item12: 2,
-            item13: 1, item14: 1, item15: 1, item16: 2
+            item13: 1, 'item13.1': 2, item14: 1, item15: 1, item16: 2
         }
         const ponderacion = ponderaciones[item] || 0
 
@@ -428,6 +434,8 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
             case 'item14':
             case 'item15':
                 return respuesta === 'SI' ? 0 : respuesta === 'NO' ? 1 : 0
+            case 'item13.1': // Nueva pregunta: antecedente_socio_negocio, enumerada como 14
+                return respuesta === 'SI' ? ponderacion : 0
             case 'item16':
                 return respuesta === 'SI' ? 0 : respuesta === 'NO' ? 2 : 0
             default:
@@ -482,6 +490,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
                                         value={fechaAprobacion}
                                         onChange={(e) => setFechaAprobacion(e.target.value)}
                                         className="h-6 text-xs"
+                                        disabled={true}
                                     />
                                 </td>
                             </tr>
@@ -818,6 +827,22 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
                             </tr>
                             <tr>
                                 <td className="border border-gray-300 p-2 text-center">14</td>
+                                <td className="border border-gray-300 p-2">¿Tiene antecedente de haber pertenecido a un socio de negocio (cliente o proveedor)?</td>
+                                <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios['item13.1'].ponderacion}</td>
+                                <td className="border border-gray-300 p-2">
+                                    <Select
+                                        options={opcionesRespuesta}
+                                        value={criterios['item13.1'].respuesta}
+                                        onChange={(value) => handleRespuestaChange('item13.1', value)}
+                                        disabled={!isEditMode && !!existingDebidaDiligencia}
+                                        className='text-center h-7 flex items-center justify-center text-[10px]'
+                                        placeholder='Seleccionar'
+                                    />
+                                </td>
+                                <td className="border border-gray-300 p-2 text-center">{criterios['item13.1'].puntaje}</td>
+                            </tr>
+                            <tr>
+                                <td className="border border-gray-300 p-2 text-center">15</td>
                                 <td className="border border-gray-300 p-2">¿Ha pasado por evaluación de desempeño?</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item14.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
@@ -833,7 +858,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
                                 <td className="border border-gray-300 p-2 text-center">{criterios.item14.puntaje}</td>
                             </tr>
                             <tr>
-                                <td className="border border-gray-300 p-2 text-center">15</td>
+                                <td className="border border-gray-300 p-2 text-center">16</td>
                                 <td className="border border-gray-300 p-2">¿En última evaluación obtuvo ≥ 71%?</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item15.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
@@ -849,7 +874,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
                                 <td className="border border-gray-300 p-2 text-center">{criterios.item15.puntaje}</td>
                             </tr>
                             <tr>
-                                <td className="border border-gray-300 p-2 text-center">16</td>
+                                <td className="border border-gray-300 p-2 text-center">17</td>
                                 <td className="border border-gray-300 p-2">¿Mantiene buena relación con todos los niveles de la organización?</td>
                                 <td className="border border-gray-300 dark:border-gray-600 p-2 text-center">{criterios.item16.ponderacion}</td>
                                 <td className="border border-gray-300 p-2">
@@ -1011,7 +1036,7 @@ export function EvaluacionTab({ aplicacion, onValidationChange, onActionChange, 
                                 onClick={existingDebidaDiligencia ? handleEditMode : handleSave}
                                 disabled={loadingCrear || loadingActualizar || loadingDebidaDiligencia}
                             >
-                                {loadingCrear || loadingActualizar || loadingDebidaDiligencia ? 'Cargando...' : (existingDebidaDiligencia ? 'Editar' : 'Crear Evaluación')}
+                                {loadingCrear || loadingActualizar || loadingDebidaDiligencia ? 'Cargando...' : (existingDebidaDiligencia ? 'Editar' : 'Guardar')}
                             </Button>
                         )}
                     </div>

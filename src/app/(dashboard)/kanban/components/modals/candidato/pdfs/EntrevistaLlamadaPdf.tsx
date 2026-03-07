@@ -255,7 +255,7 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
         if (!dateString) return ''
 
-        return new Date(dateString).toLocaleDateString('es-PE')
+        return dateString.split('T')[0]
 
     }
 
@@ -353,7 +353,7 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                                 <View style={{ width: '60%', justifyContent: 'center', alignItems: 'center', fontSize: 6 }}>
 
-                                    <Text>{entrevista.fecha_version ? new Date(entrevista.fecha_version).toLocaleDateString('es-ES') : 'N/A'}</Text>
+                                    <Text>{entrevista.fecha_version ? entrevista.fecha_version.split('T')[0] : 'N/A'}</Text>
 
                                 </View>
 
@@ -771,7 +771,7 @@ export function EntrevistaLlamadaPdf({ aplicacion, entrevista, referencias, jefe
 
                         <View style={[styles.cellLast, { width: '70%', height: 40 }]}>
 
-                            <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 9 }}>{entrevista.resultado}</Text>
+                            <Text>{entrevista.resultado}</Text>
 
                         </View>
 

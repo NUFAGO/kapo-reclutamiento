@@ -300,13 +300,13 @@ const s = StyleSheet.create({
 // ─────────────────────────────────────────────
 const fmt = (d?: string | null): string => {
     if (!d) return '—'
-    try { return new Date(d).toLocaleDateString('es-PE') } catch { return String(d) }
+    return d.replace(/\.000Z$/, '').split('T')[0]
 }
 
 type RiskLevel = 'CRÍTICO' | 'ALTO' | 'MODERADO' | 'BAJO'
 
 const riskMeta: Record<RiskLevel, { textColor: string; bg: string; border: string; range: string }> = {
-    CRÍTICO:  { textColor: WHITE, bg: '#ff0000', border: '#ff0000', range: '16–25' },
+    CRÍTICO:  { textColor: WHITE, bg: '#ff0000', border: '#ff0000', range: '16–27' },
     ALTO:     { textColor: DARK,  bg: '#ffc000', border: '#ffc000', range: '11–15' },
     MODERADO: { textColor: DARK,  bg: '#ffc000', border: '#ffc000', range: '6–10'  },
     BAJO:     { textColor: DARK,  bg: '#92d050', border: '#92d050', range: '1–5'   },
@@ -402,7 +402,7 @@ export function DebidaDiligenciaPdf({ aplicacion, debidaDiligencia }: Props) {
                     </View>
                     <View style={[s.docInfoCell, { width: '14%' }]}>
                         <Text style={s.docInfoLabel}>VERSIÓN</Text>
-                        <Text style={s.docInfoValue}>1</Text>
+                        <Text style={s.docInfoValue}>{dd.version}</Text>
                     </View>
                     <View style={[s.docInfoCell, { width: '28%' }]}>
                         <Text style={s.docInfoLabel}>FECHA DE APROBACIÓN</Text>
@@ -534,9 +534,10 @@ export function DebidaDiligenciaPdf({ aplicacion, debidaDiligencia }: Props) {
                     <CriteriaRow num="11" text="¿No tiene experiencia o no cubre expectativas para el puesto?" pond={c.item11.ponderacion} resp={c.item11.respuesta} pts={c.item11.puntaje} />
                     <CriteriaRow num="12" text="¿Existe conflicto de interés o riesgo de incumplimiento en la relación laboral?" pond={c.item12.ponderacion} resp={c.item12.respuesta} pts={c.item12.puntaje} />
                     <CriteriaRow num="13" text="¿El título se encuentra registrado en SUNEDU?" pond={c.item13.ponderacion} resp={c.item13.respuesta} pts={c.item13.puntaje} />
-                    <CriteriaRow num="14" text="¿Ha pasado por evaluación de desempeño?" pond={c.item14.ponderacion} resp={c.item14.respuesta} pts={c.item14.puntaje} />
-                    <CriteriaRow num="15" text="¿En última evaluación obtuvo >= 71%?" pond={c.item15.ponderacion} resp={c.item15.respuesta} pts={c.item15.puntaje} />
-                    <CriteriaRow num="16" text="¿Mantiene buena relación con todos los niveles de la organización?" pond={c.item16.ponderacion} resp={c.item16.respuesta} pts={c.item16.puntaje} last />
+                    <CriteriaRow num="14" text="¿Tiene antecedente de haber pertenecido a un socio de negocio (cliente o proveedor)?" pond={c['item13.1'].ponderacion} resp={c['item13.1'].respuesta} pts={c['item13.1'].puntaje} />
+                    <CriteriaRow num="15" text="¿Ha pasado por evaluación de desempeño?" pond={c.item14.ponderacion} resp={c.item14.respuesta} pts={c.item14.puntaje} />
+                    <CriteriaRow num="16" text="¿En última evaluación obtuvo >= 71%?" pond={c.item15.ponderacion} resp={c.item15.respuesta} pts={c.item15.puntaje} />
+                    <CriteriaRow num="17" text="¿Mantiene buena relación con todos los niveles de la organización?" pond={c.item16.ponderacion} resp={c.item16.respuesta} pts={c.item16.puntaje} last />
 
                     {/* Total */}
                     <View style={s.totalRow}>

@@ -48,6 +48,8 @@ export function KanbanHeader({
   // Obtener convocatorias del backend
   const { convocatorias, loading } = useConvocatorias({ limit: 100 })
 
+  const convocatoriasActivas = convocatorias.filter(c => c.estado_convocatoria === 'ACTIVA')
+
   const convocatoriaActual = convocatorias.find(c => c.id === convocatoriaSeleccionada)
 
   return (
@@ -110,7 +112,7 @@ export function KanbanHeader({
               isLoading={loading}
               showSearchIcon={true}
               options={[
-                ...convocatorias.map((convocatoria) => ({
+                ...convocatoriasActivas.map((convocatoria) => ({
                   value: convocatoria.id,
                   label: `${convocatoria.cargo_nombre || 'Sin cargo'} ${convocatoria.especialidad_nombre ? `(${convocatoria.especialidad_nombre})` : ''} - ${convocatoria.prioridad}`.trim()
                 }))

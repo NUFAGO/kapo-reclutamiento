@@ -11,6 +11,7 @@ export const CREAR_DEBIDA_DILIGENCIA_MUTATION = `
       evaluador_id
       nombre_evaluador
       codigo
+      version
       fecha_aprobacion
       fecha_evaluacion
       criterios
@@ -37,6 +38,7 @@ export const ACTUALIZAR_DEBIDA_DILIGENCIA_MUTATION = `
       evaluador_id
       nombre_evaluador
       codigo
+      version
       fecha_aprobacion
       fecha_evaluacion
       criterios

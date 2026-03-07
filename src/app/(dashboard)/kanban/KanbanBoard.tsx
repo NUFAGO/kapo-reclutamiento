@@ -45,7 +45,7 @@ export function KanbanBoard({ convocatoriaId, onAplicacionClick, viewMode = 'mai
   ]
 
   // Cargar datos iniciales con GraphQL - UNA SOLA QUERY PARA TODAS LAS COLUMNAS
-  const { data: kanbanData, isLoading: isInitialLoading, error, refetch } = useQuery({
+  const { data: kanbanData, isLoading: isInitialLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['kanban-data', convocatoriaId || 'all'],
     queryFn: async () => {
       const response = await graphqlRequest<{
@@ -155,13 +155,42 @@ export function KanbanBoard({ convocatoriaId, onAplicacionClick, viewMode = 'mai
     if (kanbanData?.getKanbanData) {
       setReferenceRawData(kanbanData.getKanbanData)
     }
-  }, [kanbanData, viewMode])
+  }, [kanbanData, viewMode, optimisticUpdates])
 
   useEffect(() => {
     if (kanbanData && !hasLoaded) {
       setHasLoaded(true)
     }
   }, [kanbanData, hasLoaded])
+
+  // Guardar updates optimistas en localStorage cuando cambien
+  useEffect(() => {
+    if (Object.keys(optimisticUpdates).length > 0) {
+      localStorage.setItem('kanban-optimistic-updates', JSON.stringify(optimisticUpdates))
+    } else {
+      localStorage.removeItem('kanban-optimistic-updates')
+    }
+  }, [optimisticUpdates])
+
+  // Cargar updates optimistas desde localStorage al montar el componente
+  useEffect(() => {
+    const storedUpdates = localStorage.getItem('kanban-optimistic-updates')
+    if (storedUpdates) {
+      try {
+        const parsed = JSON.parse(storedUpdates)
+        setOptimisticUpdates(parsed)
+      } catch (error) {
+        console.error('Error parsing optimistic updates from localStorage:', error)
+      }
+    }
+  }, [])
+
+  // Limpiar updates optimistas cuando se hace refetch para mostrar datos frescos
+  useEffect(() => {
+    if (isRefetching) {
+      setOptimisticUpdates({})
+    }
+  }, [isRefetching])
 
   // Función para mover una aplicación entre columnas localmente
   const handleAplicacionStateChanged = useCallback((aplicacionId: string, newEstado: EstadoKanban, isFinalized?: boolean) => {

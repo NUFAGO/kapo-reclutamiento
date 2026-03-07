@@ -22,6 +22,7 @@ export interface DebidaDiligencia {
   evaluador_id: string
   nombre_evaluador: string
   codigo: string
+  version?: number
   fecha_aprobacion?: string
   fecha_evaluacion: string
   criterios: Record<string, any>
@@ -45,6 +46,7 @@ export interface CrearDebidaDiligenciaInput {
   evaluador_id: string
   nombre_evaluador: string
   codigo: string
+  version?: number
   fecha_aprobacion?: string
   fecha_evaluacion: string
   criterios: Record<string, any>
@@ -57,6 +59,7 @@ export interface CrearDebidaDiligenciaInput {
 export interface ActualizarDebidaDiligenciaInput {
   evaluador_id?: string
   nombre_evaluador?: string
+  version?: number
   fecha_aprobacion?: string
   fecha_evaluacion?: string
   criterios?: Record<string, any>

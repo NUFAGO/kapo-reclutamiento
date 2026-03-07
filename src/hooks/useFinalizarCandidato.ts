@@ -48,11 +48,8 @@ export function useFinalizarCandidato() {
             queryClient.invalidateQueries({ queryKey: ['candidatos'] })
             queryClient.invalidateQueries({ queryKey: ['convocatorias'] })
 
-            // Si la convocatoria se finalizó completamente, limpiar todas las aplicaciones del kanban con update optimista
-            if (data.convocatoria.estadoConvocatoria === 'FINALIZADA') {
-                // Invalidar queries de kanban para actualizar el UI con los datos filtrados del backend
-                queryClient.invalidateQueries({ queryKey: ['kanban-data'] })
-            }
+            // Invalidar kanban-data para refrescar el UI
+            queryClient.invalidateQueries({ queryKey: ['kanban-data'] })
         },
         onError: (error) => {
             setIsExecuting(false)

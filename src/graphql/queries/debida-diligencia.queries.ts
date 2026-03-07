@@ -11,6 +11,7 @@ export const OBTENER_DEBIDA_DILIGENCIA_QUERY = `
       evaluador_id
       nombre_evaluador
       codigo
+      version
       fecha_aprobacion
       fecha_evaluacion
       criterios
@@ -37,6 +38,7 @@ export const OBTENER_DEBIDA_DILIGENCIA_POR_APLICACION_QUERY = `
       evaluador_id
       nombre_evaluador
       codigo
+      version
       fecha_aprobacion
       fecha_evaluacion
       criterios
@@ -69,6 +71,7 @@ export const LISTAR_DEBIDAS_DILIGENCIAS_QUERY = `
       evaluador_id
       nombre_evaluador
       codigo
+      version
       fecha_aprobacion
       fecha_evaluacion
       criterios
